@@ -27,7 +27,10 @@ env/
 archive_history.log
 metadata_edits.log
 archive_tags_cache.json
-archive.txt
+# Local user ledgers and scratch text files (keep template & requirements tracked)
+*.txt
+!archive_template.txt
+!requirements.txt
 
 # Backups and test scratch files
 yt_archive_app_backup*.py

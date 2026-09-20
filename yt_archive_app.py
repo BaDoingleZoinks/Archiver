@@ -20,7 +20,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.3.1"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -373,6 +373,9 @@ class ArchiveApp:
         self.rename_ledger_btn = ttk.Button(ledger_top_bar, text="Rename", width=8, command=self.rename_ledger_preset)
         self.rename_ledger_btn.pack(side=tk.LEFT, padx=(5, 2))
         
+        self.delete_ledger_btn = ttk.Button(ledger_top_bar, text="Remove", width=8, command=self.delete_ledger_preset)
+        self.delete_ledger_btn.pack(side=tk.LEFT, padx=2)
+        
         self.choose_ledger_btn = ttk.Button(ledger_top_bar, text="Choose File...", command=self.choose_ledger_file)
         self.choose_ledger_btn.pack(side=tk.LEFT, padx=2)
         
@@ -705,6 +708,57 @@ class ArchiveApp:
             self.ledger_combo.set(clean_name)
             self.save_settings()
             self.log(f"Ledger '{curr_name}' renamed to: '{clean_name}'")
+
+    def delete_ledger_preset(self):
+        """Removes the current active ledger preset, with an option to delete the physical file."""
+        curr_name = self.ledger_name_var.get().strip()
+        if not curr_name:
+            return
+
+        if len(self.ledger_presets) == 1 and curr_name == "Main Archive" and self.ledger_presets.get("Main Archive") == "archive.txt":
+            messagebox.showinfo("Cannot Remove", "'Main Archive' is the only default ledger and cannot be removed.\n\nYou can use 'Choose File...' or 'New Ledger...' to switch to a different ledger.")
+            return
+
+        confirm = messagebox.askyesno(
+            "Remove Ledger",
+            f"Are you sure you want to remove '{curr_name}' from your saved ledgers?\n\n(This will remove it from the list in the application.)"
+        )
+        if not confirm:
+            return
+
+        file_path = self.ledger_presets.pop(curr_name, self.ledger_file_var.get())
+
+        # Ask if they want to delete the physical text file
+        if file_path and os.path.isfile(file_path):
+            del_file = messagebox.askyesno(
+                "Delete Physical File?",
+                f"Would you also like to permanently delete the physical text file from your computer?\n\nFile: {file_path}\n\n• Click 'Yes' to permanently delete the file.\n• Click 'No' to keep the text file safe on your computer."
+            )
+            if del_file:
+                try:
+                    os.remove(file_path)
+                    self.log(f"Deleted physical ledger file: {file_path}")
+                except Exception as e:
+                    messagebox.showerror("Error", f"Could not delete physical ledger file:\n{e}")
+
+        # Ensure at least one default ledger remains in presets
+        if not self.ledger_presets:
+            self.ledger_presets = {"Main Archive": "archive.txt"}
+
+        # Select the next available ledger
+        next_name = list(self.ledger_presets.keys())[0]
+        next_path = self.ledger_presets[next_name]
+
+        self.ledger_name_var.set(next_name)
+        self.ledger_file_var.set(next_path)
+        self.ledger_combo['values'] = list(self.ledger_presets.keys())
+        self.ledger_combo.set(next_name)
+        if hasattr(self, 'ledger_path_lbl'):
+            self.ledger_path_lbl.config(text=f"File: {next_path}")
+
+        self.save_settings()
+        self.log(f"Removed ledger '{curr_name}'. Active ledger is now: '{next_name}' ({next_path})")
+        messagebox.showinfo("Ledger Removed", f"Ledger '{curr_name}' has been removed.\n\nActive ledger set to: '{next_name}'.")
 
     def choose_ledger_file(self):
         """Allows user to browse and select an existing ledger text file with a friendly name."""
