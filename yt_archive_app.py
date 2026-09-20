@@ -16,11 +16,12 @@ import requests
 import queue
 import internetarchive as ia
 import unicodedata
+from datetime import datetime, timezone
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.4.0"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -58,6 +59,12 @@ class ArchiveApp:
         self.meta_sort_reverse = True
         self.load_metadata_cache()
         
+        # Cloud Cooldown Synchronization state
+        self._cached_remote_upload_time = 0
+        self._last_remote_check_time = 0
+        self._is_checking_remote_upload = False
+        self._last_local_log_time = 0
+        
         self.url_presets = []
         self.tags_presets = []
         
@@ -67,6 +74,7 @@ class ArchiveApp:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         threading.Thread(target=self.check_updates_background, daemon=True).start()
         self.root.after(1000, self.check_ia_credentials_startup)
+        self.root.after(2000, self._periodic_remote_sync)
 
     def load_settings(self):
         self.url_presets = []
@@ -425,8 +433,9 @@ class ArchiveApp:
         self.open_settings_btn = ttk.Button(btn_frame, text="Open Settings", command=self.open_settings_file)
         self.open_settings_btn.pack(side=tk.LEFT, padx=5)
         
-        self.elapsed_label = ttk.Label(btn_frame, text="Time since last upload: Calculating...", font=("TkDefaultFont", 9, "bold"))
+        self.elapsed_label = ttk.Label(btn_frame, text="Time since last upload: Calculating...", font=("TkDefaultFont", 9, "bold"), cursor="hand2")
         self.elapsed_label.pack(side=tk.RIGHT, padx=10)
+        self.elapsed_label.bind("<Button-1>", lambda e: self.refresh_remote_upload_time(force=True))
         
         # Tabs for logs
         self.notebook = ttk.Notebook(self.tab1_frame)
@@ -558,6 +567,8 @@ class ArchiveApp:
             self.elapsed_label.config(text="Time since last upload: No uploads yet")
         else:
             elapsed = int(time.time() - last_time)
+            if elapsed < 0:
+                elapsed = 0
             hours = elapsed // 3600
             minutes = (elapsed % 3600) // 60
             seconds = elapsed % 60
@@ -567,7 +578,12 @@ class ArchiveApp:
             else:
                 time_str = f"{minutes}m {seconds}s"
                 
-            self.elapsed_label.config(text=f"Time since last upload: {time_str}")
+            remote_time = getattr(self, '_cached_remote_upload_time', 0)
+            local_log_time = getattr(self, '_last_local_log_time', 0)
+            if remote_time > 0 and remote_time > local_log_time:
+                self.elapsed_label.config(text=f"Time since last upload: {time_str} ☁")
+            else:
+                self.elapsed_label.config(text=f"Time since last upload: {time_str}")
             
         # Loop every second
         self.root.after(1000, self.update_elapsed_time)
@@ -843,8 +859,81 @@ class ArchiveApp:
                 except Exception as e:
                     messagebox.showerror("Error", f"Could not create ledger file: {e}")
 
+    def parse_ia_date(self, date_str):
+        """Parses Internet Archive date strings into epoch timestamps."""
+        if not date_str:
+            return 0
+        date_str = str(date_str).strip()
+        for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+            try:
+                dt = datetime.strptime(date_str[:19], fmt)
+                return dt.replace(tzinfo=timezone.utc).timestamp()
+            except Exception:
+                pass
+        return 0
+
+    def get_ia_account_identifier(self):
+        """Dynamically retrieves the account email/username from saved settings or S3 keys."""
+        uploader_val = getattr(self, "ia_uploader_email", "").strip()
+        if uploader_val:
+            return uploader_val
+        try:
+            cfg = ia.config.get_config()
+            s3 = cfg.get("s3", {})
+            ak = s3.get("access")
+            sk = s3.get("secret")
+            if ak and sk:
+                derived = ia.get_username(ak, sk)
+                if derived:
+                    self.ia_uploader_email = derived
+                    return derived
+            cookies = cfg.get("cookies", {})
+            user = cookies.get("logged-in-user") or cfg.get("general", {}).get("screenname")
+            if user:
+                self.ia_uploader_email = user
+                return user
+        except Exception:
+            pass
+        return ""
+
+    def refresh_remote_upload_time(self, force=False, block=False):
+        """Fetches the timestamp of the latest upload on the user's IA account across all devices."""
+        if getattr(self, '_is_checking_remote_upload', False) and not block:
+            return
+        if not force and (time.time() - getattr(self, '_last_remote_check_time', 0) < 120):
+            return
+
+        def _worker():
+            self._is_checking_remote_upload = True
+            try:
+                username = self.get_ia_account_identifier()
+                if not username:
+                    return
+                s = ia.search_items(f"uploader:{username}", sorts=["addeddate desc"], fields=["identifier", "addeddate", "publicdate"])
+                item = next(iter(s), None)
+                if item:
+                    raw_date = item.get("addeddate") or item.get("publicdate")
+                    ts = self.parse_ia_date(raw_date)
+                    if ts > 0:
+                        self._cached_remote_upload_time = ts
+                        self._last_remote_check_time = time.time()
+            except Exception:
+                pass
+            finally:
+                self._is_checking_remote_upload = False
+
+        if block:
+            _worker()
+        else:
+            threading.Thread(target=_worker, daemon=True).start()
+
+    def _periodic_remote_sync(self):
+        """Periodically checks the latest account upload time in the background."""
+        self.refresh_remote_upload_time()
+        self.root.after(120000, self._periodic_remote_sync)
+
     def get_last_upload_time(self):
-        """Reads archive_history.log and returns the timestamp of the last successful upload."""
+        """Reads archive_history.log and remote IA account status, returning the timestamp of the latest upload."""
         log_time = 0
         if os.path.exists("archive_history.log"):
             try:
@@ -858,13 +947,17 @@ class ArchiveApp:
             except Exception:
                 pass
                 
+        self._last_local_log_time = log_time
         artificial_time = getattr(self, 'artificial_last_upload_time', 0)
-        return max(log_time, artificial_time)
+        remote_time = getattr(self, '_cached_remote_upload_time', 0)
+        return max(log_time, artificial_time, remote_time)
 
     def record_successful_upload(self, video_id, title, tags_str=None, lang_code=None):
         """Records a successful upload to the human-readable history log."""
         try:
             now = time.time()
+            self._cached_remote_upload_time = now
+            self._last_remote_check_time = now
             date_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now))
             with open("archive_history.log", "a", encoding="utf-8") as f:
                 f.write(f"[{date_str}] | {now} | {video_id} | {title}\n")
@@ -1103,6 +1196,11 @@ class ArchiveApp:
                     if self.stop_event.is_set() or not self.wait_if_paused():
                         return
                         
+                    # On first attempt for this item, sync with Archive.org to check if another device uploaded
+                    if attempt == 0:
+                        self.log("Syncing upload cooldown with Archive.org account across devices...")
+                        self.refresh_remote_upload_time(force=True, block=True)
+
                     while True:
                         if self.stop_event.is_set() or not self.wait_if_paused():
                             return
@@ -1993,15 +2091,12 @@ class ArchiveApp:
         """Worker thread to fetch all account items and consolidate with local archive ledger."""
         try:
             # Determine account uploader query dynamically
-            uploader_val = getattr(self, "ia_uploader_email", "").strip()
+            uploader_val = self.get_ia_account_identifier()
             if not uploader_val:
-                try:
-                    cfg = ia.config.get_config()
-                    uploader_val = cfg.get("cookies", {}).get("logged-in-user") or cfg.get("general", {}).get("screenname") or ""
-                except Exception:
-                    pass
-            if not uploader_val:
-                uploader_val = "aruizcamauer@gmail.com"
+                self.root.after(0, lambda: self.meta_sync_status_label.config(text="Error: No IA account credentials configured."))
+                self._sync_in_progress = False
+                self.meta_sync_btn.config(state=tk.NORMAL)
+                return
             query = f"uploader:{uploader_val}"
             s = ia.search_items(query, fields=["identifier", "title", "subject", "language", "publicdate", "addeddate", "date", "creator", "mediatype"])
             total = getattr(s, "num_found", 0)
