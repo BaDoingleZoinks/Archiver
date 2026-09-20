@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.4.0"
+APP_VERSION = "1.5.0"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -452,8 +452,17 @@ class ArchiveApp:
         self.history_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.history_tab, text="Archive History")
         
+        history_top_frame = ttk.Frame(self.history_tab)
+        history_top_frame.pack(fill=tk.X, padx=5, pady=(5, 2))
+        
+        self.history_sync_btn = ttk.Button(history_top_frame, text="🔄 Sync & Refresh from Account", command=self.sync_history_from_account)
+        self.history_sync_btn.pack(side=tk.LEFT)
+        
+        self.history_status_lbl = ttk.Label(history_top_frame, text="", font=("Segoe UI", 8), foreground="gray")
+        self.history_status_lbl.pack(side=tk.LEFT, padx=10)
+
         self.history_area = scrolledtext.ScrolledText(self.history_tab, wrap=tk.WORD, state=tk.DISABLED)
-        self.history_area.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.history_area.pack(fill=tk.BOTH, expand=True, padx=5, pady=(2, 5))
         
         # Load initial history
         self.refresh_history_view()
@@ -592,8 +601,21 @@ class ArchiveApp:
         self.history_area.config(state=tk.NORMAL)
         self.history_area.delete(1.0, tk.END)
         if os.path.exists("archive_history.log"):
-            with open("archive_history.log", "r", encoding="utf-8") as f:
-                self.history_area.insert(tk.END, f.read())
+            try:
+                with open("archive_history.log", "r", encoding="utf-8", errors="replace") as f:
+                    for line in f:
+                        clean = line.strip()
+                        if not clean:
+                            continue
+                        parts = clean.split(" | ")
+                        if len(parts) >= 5:
+                            self.history_area.insert(tk.END, f"{parts[0]} | {parts[2]} | {parts[3]} | [Ledger: {parts[4]}]\n")
+                        elif len(parts) >= 4:
+                            self.history_area.insert(tk.END, f"{parts[0]} | {parts[2]} | {parts[3]}\n")
+                        else:
+                            self.history_area.insert(tk.END, clean + "\n")
+            except Exception as e:
+                self.history_area.insert(tk.END, f"Error reading history: {e}\n")
         else:
             self.history_area.insert(tk.END, "No archives recorded yet.")
         self.history_area.see(tk.END)
@@ -620,6 +642,146 @@ class ArchiveApp:
             self.pause_btn.config(text="Pause")
             self.log("\n[RESUME] Pipeline resumed.")
         
+    def sync_history_from_account(self):
+        """Fetches all account uploads from Archive.org and synchronizes archive_history.log."""
+        if getattr(self, '_syncing_history', False):
+            messagebox.showinfo("Sync in Progress", "History sync is already running.")
+            return
+
+        self._syncing_history = True
+        self.history_sync_btn.config(state=tk.DISABLED)
+        self.history_status_lbl.config(text="Connecting to Archive.org account...")
+
+        def _worker():
+            try:
+                username = self.get_ia_account_identifier()
+                if not username:
+                    self.root.after(0, lambda: self.history_status_lbl.config(text="Error: No IA account configured."))
+                    self.root.after(0, lambda: messagebox.showerror("Error", "No Internet Archive account or S3 keys found. Please set them up in 'IA Account Setup'."))
+                    return
+
+                self.root.after(0, lambda: self.history_status_lbl.config(text="Fetching account uploads..."))
+                query = f"uploader:{username}"
+                s = ia.search_items(query, fields=["identifier", "title", "publicdate", "addeddate", "date", "ledger"])
+                total = getattr(s, "num_found", 0)
+
+                # Read existing history log with case-insensitive deduplication
+                existing_entries = {}  # vid_lower -> { "date_str", "ts", "vid", "title", "ledger" }
+                if os.path.exists("archive_history.log"):
+                    try:
+                        with open("archive_history.log", "r", encoding="utf-8", errors="replace") as f:
+                            for line in f:
+                                parts = line.strip().split(" | ")
+                                if len(parts) >= 4:
+                                    date_str = parts[0].strip("[]")
+                                    try:
+                                        epoch = float(parts[1])
+                                    except Exception:
+                                        epoch = 0
+                                    raw_vid = parts[2].strip()
+                                    raw_title = parts[3].strip()
+                                    raw_ledger = parts[4].strip() if len(parts) >= 5 else ""
+                                    
+                                    vid_key = re.sub(r'[^a-z0-9]', '', raw_vid.lower())
+                                    if vid_key not in existing_entries:
+                                        existing_entries[vid_key] = {
+                                            "date_str": date_str,
+                                            "ts": epoch,
+                                            "vid": raw_vid,
+                                            "title": raw_title,
+                                            "ledger": raw_ledger
+                                        }
+                                    else:
+                                        # Prefer the mixed-case ID / underscores over sanitized dashes
+                                        curr = existing_entries[vid_key]
+                                        if (any(c.isupper() for c in raw_vid) or '_' in raw_vid) and not (any(c.isupper() for c in curr["vid"]) or '_' in curr["vid"]):
+                                            curr["vid"] = raw_vid
+                                        if raw_ledger and not curr["ledger"]:
+                                            curr["ledger"] = raw_ledger
+                    except Exception:
+                        pass
+
+                added_count = 0
+                updated_count = 0
+                for item in s:
+                    ident = item.get("identifier", "")
+                    if not ident.lower().startswith("yt-archive-"):
+                        continue
+                    ia_vid = ident[11:].strip()
+                    if not ia_vid:
+                        continue
+
+                    vid_key = re.sub(r'[^a-z0-9]', '', ia_vid.lower())
+                    raw_ledger = item.get("ledger", "")
+                    if isinstance(raw_ledger, list):
+                        raw_ledger = raw_ledger[0] if raw_ledger else ""
+                    ledger_tag = raw_ledger.strip() or "Main Archive"
+
+                    if vid_key in existing_entries:
+                        curr = existing_entries[vid_key]
+                        if not curr["ledger"] and raw_ledger:
+                            curr["ledger"] = ledger_tag
+                            updated_count += 1
+                        continue
+
+                    title = item.get("title", "Unknown Title")
+                    date_raw = item.get("addeddate") or item.get("publicdate") or item.get("date") or ""
+                    ts = self.parse_ia_date(date_raw)
+                    if ts > 0:
+                        date_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
+                    else:
+                        ts = time.time()
+                        date_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
+
+                    existing_entries[vid_key] = {
+                        "date_str": date_str,
+                        "ts": ts,
+                        "vid": ia_vid,
+                        "title": title,
+                        "ledger": ledger_tag
+                    }
+                    added_count += 1
+
+                # Re-sort all history entries chronologically
+                sorted_entries = sorted(existing_entries.values(), key=lambda x: x["ts"])
+                with open("archive_history.log", "w", encoding="utf-8") as f:
+                    for entry in sorted_entries:
+                        ledger_str = entry["ledger"] if entry["ledger"] else "Main Archive"
+                        f.write(f"[{entry['date_str']}] | {entry['ts']} | {entry['vid']} | {entry['title']} | {ledger_str}\n")
+
+                if sorted_entries:
+                    newest_ts = sorted_entries[-1][1]
+                    if newest_ts > getattr(self, '_cached_remote_upload_time', 0):
+                        self._cached_remote_upload_time = newest_ts
+                        self._last_remote_check_time = time.time()
+
+                self.root.after(0, self.refresh_history_view)
+                status_msg = f"✓ Synced ({added_count} new"
+                if updated_count > 0:
+                    status_msg += f", {updated_count} enriched"
+                status_msg += ")"
+                self.root.after(0, lambda m=status_msg: self.history_status_lbl.config(text=m))
+
+                if hasattr(self, 'load_items_from_history'):
+                    self.root.after(0, self.load_items_from_history)
+
+                self.root.after(0, lambda: messagebox.showinfo(
+                    "History Synced",
+                    f"Successfully synchronized upload history from Archive.org!\n\n"
+                    f"• Account items fetched: {total}\n"
+                    f"• New items added to history log: {added_count}\n"
+                    f"• Total history entries: {len(sorted_entries)}\n\n"
+                    f"(Note: Your local download ledgers remain unchanged.)"
+                ))
+            except Exception as e:
+                self.root.after(0, lambda: self.history_status_lbl.config(text="Sync failed"))
+                self.root.after(0, lambda err=e: messagebox.showerror("Sync Error", f"Could not sync history: {err}"))
+            finally:
+                self._syncing_history = False
+                self.root.after(0, lambda: self.history_sync_btn.config(state=tk.NORMAL))
+
+        threading.Thread(target=_worker, daemon=True).start()
+
     def start_archiving(self):
         raw_url = self.url_combo.get().strip()
         if not raw_url:
@@ -633,6 +795,14 @@ class ArchiveApp:
         self.start_btn.config(state=tk.DISABLED)
         self.pause_btn.config(text="Pause", state=tk.NORMAL)
         self.stop_btn.config(state=tk.NORMAL)
+
+        # Lock ledger controls while pipeline is active
+        self.ledger_combo.config(state="disabled")
+        self.rename_ledger_btn.config(state=tk.DISABLED)
+        self.delete_ledger_btn.config(state=tk.DISABLED)
+        self.choose_ledger_btn.config(state=tk.DISABLED)
+        self.new_ledger_btn.config(state=tk.DISABLED)
+
         self.stop_event.clear()
         self.pause_event.set()
         
@@ -642,6 +812,10 @@ class ArchiveApp:
         prevent_sleep = self.prevent_sleep_var.get()
         delay_minutes = self.delay_var.get()
         reverse_playlist = self.reverse_playlist_var.get()
+
+        # Pin the active ledger for this run
+        active_ledger_path = self.get_ledger_path()
+        active_ledger_name = self.ledger_name_var.get().strip() or "Main Archive"
         
         # Extract 3-letter language code if not "None"
         raw_lang = self.lang_var.get()
@@ -652,9 +826,10 @@ class ArchiveApp:
                 lang_code = match.group(1)
         
         self.log(f"=== Archival Pipeline Started (Max Resolution: {selected_res}) ===")
+        self.log(f"Active Ledger: '{active_ledger_name}' ({os.path.basename(active_ledger_path)})")
         self.worker_thread = threading.Thread(
             target=self.run_pipeline, 
-            args=(url, self.tags_combo.get().strip(), selected_res, base_dir, keep_files, prevent_sleep, delay_minutes, lang_code, reverse_playlist), 
+            args=(url, self.tags_combo.get().strip(), selected_res, base_dir, keep_files, prevent_sleep, delay_minutes, lang_code, reverse_playlist, active_ledger_path, active_ledger_name), 
             daemon=True
         )
         self.worker_thread.start()
@@ -952,16 +1127,17 @@ class ArchiveApp:
         remote_time = getattr(self, '_cached_remote_upload_time', 0)
         return max(log_time, artificial_time, remote_time)
 
-    def record_successful_upload(self, video_id, title, tags_str=None, lang_code=None):
+    def record_successful_upload(self, video_id, title, tags_str=None, lang_code=None, ledger_name="Main Archive"):
         """Records a successful upload to the human-readable history log."""
         try:
             now = time.time()
             self._cached_remote_upload_time = now
             self._last_remote_check_time = now
             date_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now))
+            ledger_label = ledger_name.strip() if ledger_name else "Main Archive"
             with open("archive_history.log", "a", encoding="utf-8") as f:
-                f.write(f"[{date_str}] | {now} | {video_id} | {title}\n")
-            self.log(f"[History] Recorded successful upload to archive_history.log")
+                f.write(f"[{date_str}] | {now} | {video_id} | {title} | {ledger_label}\n")
+            self.log(f"[History] Recorded successful upload to archive_history.log (Ledger: {ledger_label})")
             
             # Automatically update local metadata cache
             ident = f"yt-archive-{video_id}".lower()
@@ -975,6 +1151,7 @@ class ArchiveApp:
                 "language": lang_code or "",
                 "date": date_str,
                 "source": "app",
+                "ledger": ledger_label,
                 "last_updated": date_str
             }
             self.save_metadata_cache()
@@ -1011,8 +1188,13 @@ class ArchiveApp:
                 time.sleep(0.5)
         return not self.stop_event.is_set()
         
-    def run_pipeline(self, url, tags_str, max_resolution, base_dir, keep_files, prevent_sleep, delay_minutes, lang_code, reverse_playlist):
+    def run_pipeline(self, url, tags_str, max_resolution, base_dir, keep_files, prevent_sleep, delay_minutes, lang_code, reverse_playlist, active_ledger_path=None, active_ledger_name="Main Archive"):
         try:
+            if not active_ledger_path:
+                active_ledger_path = self.get_ledger_path()
+            if not active_ledger_name:
+                active_ledger_name = self.ledger_name_var.get().strip() or "Main Archive"
+
             # Prevent Windows from going to sleep while the pipeline is active
             if prevent_sleep and os.name == 'nt':
                 ctypes.windll.kernel32.SetThreadExecutionState(0x80000000 | 0x00000001)
@@ -1045,11 +1227,10 @@ class ArchiveApp:
                     except Exception as e:
                         self.log(f"Warning: Could not remove {f}: {e}")
                         
-                # Create a temporary clone of the archive ledger.
+                # Create a temporary clone of the pinned archive ledger.
                 # yt-dlp will write to the temp ledger, and we only overwrite the real one upon successful IA upload.
-                ledger_path = self.get_ledger_path()
-                if os.path.exists(ledger_path):
-                    shutil.copy(ledger_path, "temp_archive.txt")
+                if os.path.exists(active_ledger_path):
+                    shutil.copy(active_ledger_path, "temp_archive.txt")
                 elif os.path.exists("temp_archive.txt"):
                     os.remove("temp_archive.txt")
                         
@@ -1165,15 +1346,14 @@ class ArchiveApp:
                             
                 if already_archived:
                     self.log(f"\n[Duplicate Prevention] '{title}' is already archived on your account ({match_desc}).")
-                    ledger_path = self.get_ledger_path()
-                    self.log(f"Recording to local ledger ({os.path.basename(ledger_path)}) to skip on future runs...")
+                    self.log(f"Recording to local ledger '{active_ledger_name}' ({os.path.basename(active_ledger_path)}) to skip on future runs...")
                     try:
-                        with open(ledger_path, "a", encoding="utf-8") as f:
+                        with open(active_ledger_path, "a", encoding="utf-8") as f:
                             archival_time = time.strftime('%Y-%m-%d %H:%M:%S')
                             f.write(f"# {title} (Account-consolidated: {archival_time})\nyoutube {video_id}\n\n")
                     except Exception as e:
                         self.log(f"Warning: Could not update ledger: {e}")
-                    self.record_successful_upload(video_id, title, tags_str, lang_code)
+                    self.record_successful_upload(video_id, title, tags_str, lang_code, active_ledger_name)
                     
                     # Clean up temp files and skip to next
                     for f in os.listdir(temp_dir):
@@ -1226,6 +1406,7 @@ class ArchiveApp:
                         "-m", f"date:{upload_date}",
                         "-m", "collection:opensource_movies",
                         "-m", "mediatype:movies",
+                        "-m", f"ledger:{active_ledger_name}",
                         "--retries", "3"
                     ]
                     
@@ -1266,14 +1447,13 @@ class ArchiveApp:
                             
                             # Write title and ID to master ledger upon SUCCESS
                             try:
-                                ledger_path = self.get_ledger_path()
-                                with open(ledger_path, "a", encoding="utf-8") as f:
+                                with open(active_ledger_path, "a", encoding="utf-8") as f:
                                     archival_time = time.strftime('%Y-%m-%d %H:%M:%S')
                                     f.write(f"# {title} (Archived: {archival_time})\nyoutube {video_id}\n\n")
                             except Exception as e:
                                 self.log(f"Warning: Could not update ledger: {e}")
                             
-                            self.record_successful_upload(video_id, title, tags_str, lang_code)
+                            self.record_successful_upload(video_id, title, tags_str, lang_code, active_ledger_name)
                             break
                         else:
                             self.log(f"\n[ERROR] ia upload failed with exit code {ia_process.returncode}.")
@@ -1319,6 +1499,11 @@ class ArchiveApp:
             self.root.after(0, lambda: self.start_btn.config(state=tk.NORMAL))
             self.root.after(0, lambda: self.pause_btn.config(text="Pause", state=tk.DISABLED))
             self.root.after(0, lambda: self.stop_btn.config(state=tk.DISABLED))
+            self.root.after(0, lambda: self.ledger_combo.config(state="readonly"))
+            self.root.after(0, lambda: self.rename_ledger_btn.config(state=tk.NORMAL))
+            self.root.after(0, lambda: self.delete_ledger_btn.config(state=tk.NORMAL))
+            self.root.after(0, lambda: self.choose_ledger_btn.config(state=tk.NORMAL))
+            self.root.after(0, lambda: self.new_ledger_btn.config(state=tk.NORMAL))
 
     # --- Wayback Machine Tab Logic ---
 
