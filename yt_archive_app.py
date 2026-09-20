@@ -20,7 +20,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -33,6 +33,7 @@ class ArchiveApp:
     def __init__(self, root):
         self.root = root
         self.github_repo = "BaDoingleZoinks/Archiver"
+        self.ia_uploader_email = ""
         self.ledger_name_var = tk.StringVar(value="Main Archive")
         self.ledger_file_var = tk.StringVar(value="archive.txt")
         self.ledger_presets = {"Main Archive": "archive.txt"}
@@ -65,6 +66,7 @@ class ArchiveApp:
         
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         threading.Thread(target=self.check_updates_background, daemon=True).start()
+        self.root.after(1000, self.check_ia_credentials_startup)
 
     def load_settings(self):
         self.url_presets = []
@@ -91,6 +93,7 @@ class ArchiveApp:
                     self.ledger_combo.set(curr_ledger_name)
                 if hasattr(self, 'ledger_path_lbl'):
                     self.ledger_path_lbl.config(text=f"File: {curr_path}")
+                self.ia_uploader_email = s.get("ia_uploader_email", "")
                 self.url_presets = s.get("url_presets", [])
                 self.tags_presets = s.get("tags_presets", [])
                 self.url_combo['values'] = self.url_presets
@@ -120,6 +123,7 @@ class ArchiveApp:
     def save_settings(self):
         s = {
             "github_repo": getattr(self, "github_repo", "BaDoingleZoinks/Archiver"),
+            "ia_uploader_email": getattr(self, "ia_uploader_email", ""),
             "ledger_name": self.ledger_name_var.get(),
             "ledger_file": self.ledger_file_var.get(),
             "ledger_presets": getattr(self, "ledger_presets", {"Main Archive": "archive.txt"}),
@@ -248,7 +252,7 @@ class ArchiveApp:
         self.root.destroy()
         
     def create_widgets(self):
-        # Header Toolbar with App Version and Updates Button
+        # Header Toolbar with App Version, Account Setup, and Updates Button
         header_bar = ttk.Frame(self.root)
         header_bar.pack(fill=tk.X, padx=10, pady=(6, 2))
         
@@ -257,6 +261,9 @@ class ArchiveApp:
         
         self.updater_btn = ttk.Button(header_bar, text="🔄 Check for Updates / Sync", command=self.open_updater_dialog)
         self.updater_btn.pack(side=tk.RIGHT)
+
+        self.ia_account_btn = ttk.Button(header_bar, text="🔑 IA Account Setup", command=self.open_ia_credentials_dialog)
+        self.ia_account_btn.pack(side=tk.RIGHT, padx=(0, 6))
 
         self.main_notebook = ttk.Notebook(self.root)
         self.main_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -1929,9 +1936,19 @@ class ArchiveApp:
         threading.Thread(target=self._ia_sync_worker, daemon=True).start()
 
     def _ia_sync_worker(self):
-        """Worker thread to fetch all account items and consolidate with local archive.txt ledger."""
+        """Worker thread to fetch all account items and consolidate with local archive ledger."""
         try:
-            query = "uploader:aruizcamauer@gmail.com"
+            # Determine account uploader query dynamically
+            uploader_val = getattr(self, "ia_uploader_email", "").strip()
+            if not uploader_val:
+                try:
+                    cfg = ia.config.get_config()
+                    uploader_val = cfg.get("cookies", {}).get("logged-in-user") or cfg.get("general", {}).get("screenname") or ""
+                except Exception:
+                    pass
+            if not uploader_val:
+                uploader_val = "aruizcamauer@gmail.com"
+            query = f"uploader:{uploader_val}"
             s = ia.search_items(query, fields=["identifier", "title", "subject", "language", "publicdate", "addeddate", "date", "creator", "mediatype"])
             total = getattr(s, "num_found", 0)
             
@@ -2240,6 +2257,199 @@ class ArchiveApp:
         if was_stopped:
             detail_msg += "\n\nThe process was stopped early by user request."
         messagebox.showinfo("Bulk Update Complete", detail_msg)
+
+    def get_ia_credentials_status(self):
+        """Checks if valid IA S3 credentials exist in the user's local ia.ini."""
+        try:
+            cfg = ia.config.get_config()
+            s3 = cfg.get("s3", {})
+            access = s3.get("access")
+            secret = s3.get("secret")
+            if access and secret:
+                return True, access
+        except Exception:
+            pass
+        return False, None
+
+    def check_ia_credentials_startup(self):
+        """Prompts user on first startup if no IA credentials are configured on this computer."""
+        has_keys, access = self.get_ia_credentials_status()
+        if not has_keys:
+            ans = messagebox.askyesno(
+                "Internet Archive Setup Required",
+                "Welcome to The Archiver!\n\nNo Internet Archive credentials were found on this computer.\n\n"
+                "To upload videos and use archive features, you need to configure your Internet Archive account.\n\n"
+                "Would you like to configure your credentials now?"
+            )
+            if ans:
+                self.open_ia_credentials_dialog()
+        else:
+            masked = access[:4] + "***" if access and len(access) >= 4 else "Connected"
+            if hasattr(self, 'ia_account_btn'):
+                self.ia_account_btn.config(text=f"🔑 IA: {masked}")
+
+    def open_ia_credentials_dialog(self):
+        """Opens the Internet Archive Credentials & Account Setup dialog."""
+        import webbrowser
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Internet Archive Account Setup")
+        dialog.geometry("540x510")
+        dialog.minsize(500, 470)
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        # Center over parent window
+        dialog.update_idletasks()
+        try:
+            x = self.root.winfo_rootx() + (self.root.winfo_width() // 2) - (dialog.winfo_width() // 2)
+            y = self.root.winfo_rooty() + (self.root.winfo_height() // 2) - (dialog.winfo_height() // 2)
+            dialog.geometry(f"+{max(0, x)}+{max(0, y)}")
+        except Exception:
+            pass
+
+        # 1. Current Status Frame
+        status_frame = ttk.LabelFrame(dialog, text="Account Connection Status", padding=(10, 8))
+        status_frame.pack(fill=tk.X, padx=12, pady=(10, 6))
+
+        has_keys, access = self.get_ia_credentials_status()
+        status_text = f"✓ Configured & Active (Access Key: {access[:4]}***)" if has_keys else "⚠ Not Configured - Credentials Missing"
+        status_color = "#28a745" if has_keys else "#dc3545"
+        status_lbl = ttk.Label(status_frame, text=status_text, foreground=status_color, font=("Segoe UI", 9, "bold"))
+        status_lbl.pack(anchor=tk.W)
+
+        # 2. Setup Notebook
+        mode_notebook = ttk.Notebook(dialog)
+        mode_notebook.pack(fill=tk.BOTH, expand=True, padx=12, pady=6)
+
+        # Tab 1: S3 API Keys (Recommended)
+        tab_s3 = ttk.Frame(mode_notebook, padding=(12, 10))
+        mode_notebook.add(tab_s3, text="S3 API Keys (Recommended)")
+
+        ttk.Label(tab_s3, text="You can generate or view your free S3 API keys on Archive.org:", wraplength=460).pack(anchor=tk.W, pady=(0, 4))
+        
+        link_btn = ttk.Button(tab_s3, text="🔗 Open https://archive.org/account/s3.php", command=lambda: webbrowser.open("https://archive.org/account/s3.php"))
+        link_btn.pack(anchor=tk.W, pady=(0, 10))
+
+        ttk.Label(tab_s3, text="S3 Access Key:").pack(anchor=tk.W, pady=(2, 2))
+        s3_access_entry = ttk.Entry(tab_s3, width=45)
+        s3_access_entry.pack(fill=tk.X, pady=(0, 6))
+
+        ttk.Label(tab_s3, text="S3 Secret Key:").pack(anchor=tk.W, pady=(2, 2))
+        s3_secret_entry = ttk.Entry(tab_s3, width=45, show="*")
+        s3_secret_entry.pack(fill=tk.X, pady=(0, 6))
+
+        show_secret_var = tk.BooleanVar(value=False)
+        def toggle_show_secret():
+            s3_secret_entry.config(show="" if show_secret_var.get() else "*")
+        ttk.Checkbutton(tab_s3, text="Show secret key", variable=show_secret_var, command=toggle_show_secret).pack(anchor=tk.W, pady=(0, 6))
+
+        ttk.Label(tab_s3, text="Account Email / Screenname (Optional, for account search):").pack(anchor=tk.W, pady=(2, 2))
+        s3_email_entry = ttk.Entry(tab_s3, width=45)
+        s3_email_entry.pack(fill=tk.X, pady=(0, 4))
+        if hasattr(self, 'ia_uploader_email') and self.ia_uploader_email:
+            s3_email_entry.insert(0, self.ia_uploader_email)
+
+        # Tab 2: Login with Email & Password
+        tab_login = ttk.Frame(mode_notebook, padding=(12, 10))
+        mode_notebook.add(tab_login, text="Log In with Email & Password")
+
+        ttk.Label(tab_login, text="Log in with your Archive.org credentials to automatically fetch and save your keys:", wraplength=460).pack(anchor=tk.W, pady=(0, 8))
+
+        ttk.Label(tab_login, text="Archive.org Email:").pack(anchor=tk.W, pady=(2, 2))
+        login_email_entry = ttk.Entry(tab_login, width=45)
+        login_email_entry.pack(fill=tk.X, pady=(0, 6))
+
+        ttk.Label(tab_login, text="Archive.org Password:").pack(anchor=tk.W, pady=(2, 2))
+        login_pwd_entry = ttk.Entry(tab_login, width=45, show="*")
+        login_pwd_entry.pack(fill=tk.X, pady=(0, 6))
+
+        show_pwd_var = tk.BooleanVar(value=False)
+        def toggle_show_pwd():
+            login_pwd_entry.config(show="" if show_pwd_var.get() else "*")
+        ttk.Checkbutton(tab_login, text="Show password", variable=show_pwd_var, command=toggle_show_pwd).pack(anchor=tk.W, pady=(0, 4))
+        ttk.Label(tab_login, text="Note: If your account uses Two-Factor Authentication (2FA), please use the S3 API Keys tab instead.", font=("Segoe UI", 8), foreground="gray", wraplength=460).pack(anchor=tk.W, pady=(6, 0))
+
+        # Action status label
+        cred_status_lbl = ttk.Label(dialog, text="", foreground="gray")
+        cred_status_lbl.pack(fill=tk.X, padx=15, pady=(2, 2))
+
+        # Bottom Button Frame
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(fill=tk.X, padx=12, pady=(6, 12))
+
+        save_btn = ttk.Button(btn_frame, text="💾 Save Credentials")
+        try:
+            save_btn.config(style="Accent.TButton")
+        except Exception:
+            pass
+        save_btn.pack(side=tk.LEFT, padx=(0, 6))
+
+        close_btn = ttk.Button(btn_frame, text="Close", command=dialog.destroy)
+        close_btn.pack(side=tk.RIGHT)
+
+        def save_worker():
+            selected_tab = mode_notebook.index(mode_notebook.select())
+            try:
+                if selected_tab == 0:
+                    # S3 Keys Tab
+                    acc = s3_access_entry.get().strip()
+                    sec = s3_secret_entry.get().strip()
+                    em = s3_email_entry.get().strip()
+                    if not acc or not sec:
+                        dialog.after(0, lambda: messagebox.showerror("Missing Keys", "Please enter both S3 Access Key and Secret Key.", parent=dialog))
+                        dialog.after(0, lambda: save_btn.config(state=tk.NORMAL))
+                        return
+                    
+                    auth_config = {
+                        "s3": {"access": acc, "secret": sec},
+                        "general": {"screenname": em} if em else {},
+                        "cookies": {"logged-in-user": em} if em else {}
+                    }
+                    ia.config.write_config_file(auth_config)
+                    if em:
+                        self.ia_uploader_email = em
+                        self.save_settings()
+
+                else:
+                    # Login Tab
+                    em = login_email_entry.get().strip()
+                    pwd = login_pwd_entry.get().strip()
+                    if not em or not pwd:
+                        dialog.after(0, lambda: messagebox.showerror("Missing Fields", "Please enter your email and password.", parent=dialog))
+                        dialog.after(0, lambda: save_btn.config(state=tk.NORMAL))
+                        return
+                    
+                    dialog.after(0, lambda: cred_status_lbl.config(text="Authenticating with Archive.org..."))
+                    auth_config = ia.config.get_auth_config(em, pwd)
+                    ia.config.write_config_file(auth_config)
+                    self.ia_uploader_email = em
+                    self.save_settings()
+
+                def on_success():
+                    save_btn.config(state=tk.NORMAL)
+                    cred_status_lbl.config(text="Credentials saved successfully!")
+                    has_k, acc_k = self.get_ia_credentials_status()
+                    if has_k:
+                        masked = acc_k[:4] + "***" if len(acc_k) >= 4 else "Connected"
+                        self.ia_account_btn.config(text=f"🔑 IA: {masked}")
+                    messagebox.showinfo("Success", "Internet Archive credentials configured successfully!\n\nYour keys are safely saved to your local user profile (ia.ini) and will never be shared.", parent=dialog)
+                    dialog.destroy()
+
+                dialog.after(0, on_success)
+
+            except Exception as e:
+                def on_err():
+                    save_btn.config(state=tk.NORMAL)
+                    cred_status_lbl.config(text="Authentication / Save error.")
+                    messagebox.showerror("Configuration Error", f"Could not save credentials:\n{e}", parent=dialog)
+                dialog.after(0, on_err)
+
+        def on_save_click():
+            save_btn.config(state=tk.DISABLED)
+            cred_status_lbl.config(text="Saving credentials to local profile...")
+            threading.Thread(target=save_worker, daemon=True).start()
+
+        save_btn.config(command=on_save_click)
 
     def check_updates_background(self):
         """Background check to detect newer releases or commits on GitHub without blocking UI."""
