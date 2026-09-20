@@ -1,0 +1,45 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Downloaded media files & temp downloads
+*.mp4
+*.webm
+*.mkv
+*.avi
+*.mov
+*.flv
+*.m4a
+*.mp3
+*.opus
+*.part
+*.ytdl
+
+# Logs and runtime caches
+*.log
+archive_history.log
+metadata_edits.log
+archive_tags_cache.json
+
+# Backups and test scratch files
+yt_archive_app_backup*.py
+*.bak
+archive_test*.txt
+temp_archive.txt
+test_missing.py
+
+# Local user settings (prevents conflicts between PCs)
+settings.json
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

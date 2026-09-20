@@ -1,0 +1,6 @@
+requests
+beautifulsoup4
+sv-ttk
+imageio-ffmpeg
+yt-dlp
+internetarchive
