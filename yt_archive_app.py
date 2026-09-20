@@ -20,7 +20,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -33,7 +33,9 @@ class ArchiveApp:
     def __init__(self, root):
         self.root = root
         self.github_repo = "BaDoingleZoinks/Archiver"
+        self.ledger_name_var = tk.StringVar(value="Main Archive")
         self.ledger_file_var = tk.StringVar(value="archive.txt")
+        self.ledger_presets = {"Main Archive": "archive.txt"}
         self.root.title(f"The Archiver - v{APP_VERSION}")
         self.root.geometry("920x700")
         self.root.minsize(850, 650)
@@ -72,7 +74,23 @@ class ArchiveApp:
                 with open("settings.json", "r", encoding="utf-8") as f:
                     s = json.load(f)
                 self.github_repo = s.get("github_repo", getattr(self, "github_repo", "BaDoingleZoinks/Archiver"))
-                self.ledger_file_var.set(s.get("ledger_file", "archive.txt"))
+                self.ledger_presets = s.get("ledger_presets", {"Main Archive": "archive.txt"})
+                if not isinstance(self.ledger_presets, dict):
+                    self.ledger_presets = {"Main Archive": "archive.txt"}
+                if "Main Archive" not in self.ledger_presets and os.path.exists("archive.txt"):
+                    self.ledger_presets["Main Archive"] = "archive.txt"
+                default_ledger_name = list(self.ledger_presets.keys())[0] if self.ledger_presets else "Main Archive"
+                curr_ledger_name = s.get("ledger_name", default_ledger_name)
+                if curr_ledger_name not in self.ledger_presets:
+                    curr_ledger_name = default_ledger_name
+                self.ledger_name_var.set(curr_ledger_name)
+                curr_path = self.ledger_presets.get(curr_ledger_name, s.get("ledger_file", "archive.txt"))
+                self.ledger_file_var.set(curr_path)
+                if hasattr(self, 'ledger_combo'):
+                    self.ledger_combo['values'] = list(self.ledger_presets.keys())
+                    self.ledger_combo.set(curr_ledger_name)
+                if hasattr(self, 'ledger_path_lbl'):
+                    self.ledger_path_lbl.config(text=f"File: {curr_path}")
                 self.url_presets = s.get("url_presets", [])
                 self.tags_presets = s.get("tags_presets", [])
                 self.url_combo['values'] = self.url_presets
@@ -102,7 +120,9 @@ class ArchiveApp:
     def save_settings(self):
         s = {
             "github_repo": getattr(self, "github_repo", "BaDoingleZoinks/Archiver"),
+            "ledger_name": self.ledger_name_var.get(),
             "ledger_file": self.ledger_file_var.get(),
+            "ledger_presets": getattr(self, "ledger_presets", {"Main Archive": "archive.txt"}),
             "url": self.url_combo.get(),
             "url_presets": self.url_presets,
             "tags": self.tags_combo.get(),
@@ -331,19 +351,29 @@ class ArchiveApp:
         self.browse_btn = ttk.Button(dir_frame, text="Browse...", command=self.browse_dir)
         self.browse_btn.pack(side=tk.LEFT, padx=(5, 0))
         
-        # Archive Ledger File
-        ttk.Label(input_frame, text="Archive Ledger (.txt):").grid(row=7, column=0, sticky=tk.W, pady=5)
+        # Archive Ledger Row (Friendly Name + Path)
+        ttk.Label(input_frame, text="Active Ledger:").grid(row=7, column=0, sticky=tk.NW, pady=5)
         ledger_frame = ttk.Frame(input_frame)
         ledger_frame.grid(row=7, column=1, sticky=tk.EW, padx=5, pady=5)
         
-        self.ledger_entry = ttk.Entry(ledger_frame, textvariable=self.ledger_file_var)
-        self.ledger_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ledger_top_bar = ttk.Frame(ledger_frame)
+        ledger_top_bar.pack(fill=tk.X)
         
-        self.choose_ledger_btn = ttk.Button(ledger_frame, text="Choose Ledger...", command=self.choose_ledger_file)
-        self.choose_ledger_btn.pack(side=tk.LEFT, padx=(5, 2))
+        self.ledger_combo = ttk.Combobox(ledger_top_bar, textvariable=self.ledger_name_var, state="readonly")
+        self.ledger_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.ledger_combo.bind("<<ComboboxSelected>>", self.on_ledger_selected)
         
-        self.new_ledger_btn = ttk.Button(ledger_frame, text="New Ledger...", command=self.create_new_ledger_file)
+        self.rename_ledger_btn = ttk.Button(ledger_top_bar, text="Rename", width=8, command=self.rename_ledger_preset)
+        self.rename_ledger_btn.pack(side=tk.LEFT, padx=(5, 2))
+        
+        self.choose_ledger_btn = ttk.Button(ledger_top_bar, text="Choose File...", command=self.choose_ledger_file)
+        self.choose_ledger_btn.pack(side=tk.LEFT, padx=2)
+        
+        self.new_ledger_btn = ttk.Button(ledger_top_bar, text="New Ledger...", command=self.create_new_ledger_file)
         self.new_ledger_btn.pack(side=tk.LEFT, padx=(2, 0))
+
+        self.ledger_path_lbl = ttk.Label(ledger_frame, text=f"File: {self.get_ledger_path()}", font=("Segoe UI", 8), foreground="gray")
+        self.ledger_path_lbl.pack(anchor=tk.W, pady=(2, 0))
 
         self.keep_files_var = tk.BooleanVar(value=False)
         self.keep_files_chk = ttk.Checkbutton(input_frame, text="Keep video files locally after successful upload", variable=self.keep_files_var)
@@ -630,14 +660,47 @@ class ArchiveApp:
 
     def get_ledger_path(self):
         """Returns absolute path of the currently selected ledger file."""
-        val = getattr(self, "ledger_file_var", None)
-        path = val.get().strip() if val else ""
+        name = self.ledger_name_var.get().strip() if hasattr(self, 'ledger_name_var') else "Main Archive"
+        presets = getattr(self, "ledger_presets", {})
+        path = presets.get(name)
+        if not path:
+            val = getattr(self, "ledger_file_var", None)
+            path = val.get().strip() if val else ""
         if not path:
             path = "archive.txt"
         return os.path.abspath(path)
 
+    def on_ledger_selected(self, event=None):
+        """Called when user selects a ledger preset from the combobox."""
+        name = self.ledger_combo.get().strip()
+        if not name:
+            return
+        path = self.ledger_presets.get(name, "archive.txt")
+        self.ledger_name_var.set(name)
+        self.ledger_file_var.set(path)
+        if hasattr(self, 'ledger_path_lbl'):
+            self.ledger_path_lbl.config(text=f"File: {path}")
+        self.save_settings()
+        self.log(f"Active archive ledger switched to: '{name}' ({path})")
+
+    def rename_ledger_preset(self):
+        """Renames the current active ledger preset display name."""
+        curr_name = self.ledger_name_var.get().strip()
+        if not curr_name:
+            return
+        new_name = simpledialog.askstring("Rename Ledger", "Enter new display name for this ledger:", initialvalue=curr_name)
+        if new_name and new_name.strip() and new_name.strip() != curr_name:
+            clean_name = new_name.strip()
+            path = self.ledger_presets.pop(curr_name, self.ledger_file_var.get())
+            self.ledger_presets[clean_name] = path
+            self.ledger_name_var.set(clean_name)
+            self.ledger_combo['values'] = list(self.ledger_presets.keys())
+            self.ledger_combo.set(clean_name)
+            self.save_settings()
+            self.log(f"Ledger '{curr_name}' renamed to: '{clean_name}'")
+
     def choose_ledger_file(self):
-        """Allows user to browse and select an existing ledger text file."""
+        """Allows user to browse and select an existing ledger text file with a friendly name."""
         init_dir = os.path.dirname(self.get_ledger_path())
         if not os.path.isdir(init_dir):
             init_dir = os.path.abspath(".")
@@ -647,48 +710,74 @@ class ArchiveApp:
             initialdir=init_dir
         )
         if filename:
+            default_display = os.path.splitext(os.path.basename(filename))[0].replace("_", " ").title()
+            friendly_name = simpledialog.askstring("Ledger Name", "Enter a friendly display name for this ledger:", initialvalue=default_display)
+            if not friendly_name or not friendly_name.strip():
+                friendly_name = default_display
+
+            friendly_name = friendly_name.strip()
+            self.ledger_presets[friendly_name] = filename
+            self.ledger_name_var.set(friendly_name)
             self.ledger_file_var.set(filename)
+            self.ledger_combo['values'] = list(self.ledger_presets.keys())
+            self.ledger_combo.set(friendly_name)
+            if hasattr(self, 'ledger_path_lbl'):
+                self.ledger_path_lbl.config(text=f"File: {filename}")
             self.save_settings()
-            self.log(f"Active archive ledger switched to: {filename}")
+            self.log(f"Added and selected ledger: '{friendly_name}' ({filename})")
 
     def create_new_ledger_file(self):
-        """Allows user to create a new ledger file (e.g. for sharing or project-specific archiving)."""
+        """Allows user to create a new ledger file with a friendly name."""
+        friendly_name = simpledialog.askstring("New Ledger", "Enter a friendly display name for the new ledger:\n(e.g. 'Trenes Archive', 'Collaborative Ledger')", initialvalue="My Archive")
+        if not friendly_name or not friendly_name.strip():
+            return
+        friendly_name = friendly_name.strip()
+        safe_filename = re.sub(r'[^a-zA-Z0-9_\-]', '_', friendly_name.lower()) + ".txt"
+
         init_dir = os.path.dirname(self.get_ledger_path())
         if not os.path.isdir(init_dir):
             init_dir = os.path.abspath(".")
+
         filename = filedialog.asksaveasfilename(
-            title="Create New Archive Ledger",
+            title="Save New Ledger File",
             defaultextension=".txt",
             filetypes=[("Text Ledger Files (*.txt)", "*.txt"), ("All Files (*.*)", "*.*")],
             initialdir=init_dir,
-            initialfile="my_archive_ledger.txt"
+            initialfile=safe_filename
         )
         if filename:
             try:
                 if not os.path.exists(filename):
                     with open(filename, "w", encoding="utf-8") as f:
-                        f.write(f"# Archive Ledger Created {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                        f.write(f"# Archive Ledger: {friendly_name}\n# Created {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                self.ledger_presets[friendly_name] = filename
+                self.ledger_name_var.set(friendly_name)
                 self.ledger_file_var.set(filename)
+                self.ledger_combo['values'] = list(self.ledger_presets.keys())
+                self.ledger_combo.set(friendly_name)
+                if hasattr(self, 'ledger_path_lbl'):
+                    self.ledger_path_lbl.config(text=f"File: {filename}")
                 self.save_settings()
-                self.log(f"Created and selected new archive ledger: {filename}")
-                messagebox.showinfo("New Ledger Created", f"New ledger created and set as active:\n\n{filename}")
+                self.log(f"Created new ledger: '{friendly_name}' ({filename})")
+                messagebox.showinfo("New Ledger Created", f"New ledger '{friendly_name}' created and set as active:\n\n{filename}")
             except Exception as e:
                 messagebox.showerror("Error", f"Could not create ledger file: {e}")
 
     def open_archive_file(self):
         """Opens the active ledger file in Notepad or default text editor."""
         path = self.get_ledger_path()
+        name = self.ledger_name_var.get() if hasattr(self, 'ledger_name_var') else "Archive Ledger"
         if os.path.exists(path):
             try:
                 os.startfile(path)
             except Exception as e:
                 self.log(f"Warning: Could not open ledger: {e}")
         else:
-            ans = messagebox.askyesno("File Not Found", f"Ledger file does not exist yet:\n\n{path}\n\nWould you like to create it now?")
+            ans = messagebox.askyesno("File Not Found", f"Ledger file for '{name}' does not exist yet:\n\n{path}\n\nWould you like to create it now?")
             if ans:
                 try:
                     with open(path, "w", encoding="utf-8") as f:
-                        f.write(f"# Archive Ledger Created {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                        f.write(f"# Archive Ledger: {name}\n# Created {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
                     os.startfile(path)
                 except Exception as e:
                     messagebox.showerror("Error", f"Could not create ledger file: {e}")
@@ -2248,6 +2337,10 @@ class ArchiveApp:
         refresh_btn = ttk.Button(select_row, text="🔄 Fetch Versions")
         refresh_btn.pack(side=tk.RIGHT)
 
+        show_commits_var = tk.BooleanVar(value=False)
+        show_commits_chk = ttk.Checkbutton(ver_frame, text="Show individual Git commits (Advanced)", variable=show_commits_var)
+        show_commits_chk.pack(anchor=tk.W, pady=(0, 4))
+
         ttk.Label(ver_frame, text="Version Notes & Details:").pack(anchor=tk.W, pady=(4, 2))
         notes_box = scrolledtext.ScrolledText(ver_frame, height=8, wrap=tk.WORD)
         notes_box.pack(fill=tk.BOTH, expand=True, pady=(0, 4))
@@ -2275,6 +2368,8 @@ class ArchiveApp:
         close_btn.pack(side=tk.RIGHT)
 
         version_data = {}
+        release_items = []
+        commit_items = []
 
         def on_version_selected(event=None):
             sel = version_combo.get()
@@ -2295,6 +2390,22 @@ class ArchiveApp:
 
         version_combo.bind("<<ComboboxSelected>>", on_version_selected)
 
+        def update_combo():
+            current_sel = version_combo.get()
+            active_items = list(release_items)
+            if show_commits_var.get():
+                active_items.extend(commit_items)
+            version_combo['values'] = active_items
+            if current_sel in active_items:
+                version_combo.set(current_sel)
+            elif active_items:
+                version_combo.current(0)
+                on_version_selected()
+            action_status_lbl.config(text=f"Loaded {len(active_items)} target(s).")
+            refresh_btn.config(state=tk.NORMAL)
+
+        show_commits_chk.config(command=update_combo)
+
         def fetch_versions_worker():
             repo = repo_var.get().strip()
             if not repo or "/" not in repo:
@@ -2305,12 +2416,13 @@ class ArchiveApp:
             action_status_lbl.config(text=f"Connecting to GitHub ({repo})...")
             headers = {"Accept": "application/vnd.github.v3+json", "User-Agent": "TheArchiver-Updater"}
             
-            items = []
+            release_items.clear()
+            commit_items.clear()
             version_data.clear()
 
             # Always offer "Latest (main branch)"
             latest_key = "Latest (main branch)"
-            items.append(latest_key)
+            release_items.append(latest_key)
             version_data[latest_key] = {
                 "type": "Bleeding-Edge Branch",
                 "ref": "main",
@@ -2327,7 +2439,7 @@ class ArchiveApp:
                         tag = rel.get("tag_name", "")
                         name = rel.get("name", tag)
                         key = f"Release: {tag} ({name})" if name and name != tag else f"Release: {tag}"
-                        items.append(key)
+                        release_items.append(key)
                         version_data[key] = {
                             "type": "Official Release",
                             "ref": tag,
@@ -2336,15 +2448,15 @@ class ArchiveApp:
                         }
 
                 # 2. Git Tags
-                if len(items) <= 1:
-                    tag_url = f"https://api.github.com/repos/{repo}/tags?per_page=15"
-                    tr = requests.get(tag_url, headers=headers, timeout=8)
-                    if tr.status_code == 200:
-                        tags = tr.json()
-                        for t in tags:
-                            t_name = t.get("name", "")
-                            key = f"Tag: {t_name}"
-                            items.append(key)
+                tag_url = f"https://api.github.com/repos/{repo}/tags?per_page=15"
+                tr = requests.get(tag_url, headers=headers, timeout=8)
+                if tr.status_code == 200:
+                    tags = tr.json()
+                    for t in tags:
+                        t_name = t.get("name", "")
+                        key = f"Tag: {t_name}"
+                        if key not in release_items and f"Release: {t_name}" not in release_items:
+                            release_items.append(key)
                             version_data[key] = {
                                 "type": "Git Tag",
                                 "ref": t_name,
@@ -2352,7 +2464,7 @@ class ArchiveApp:
                                 "body": f"Git tag: {t_name}"
                             }
 
-                # 3. Recent commits on main
+                # 3. Recent commits on main (stored separately in commit_items)
                 commit_url = f"https://api.github.com/repos/{repo}/commits?sha=main&per_page=10"
                 cr = requests.get(commit_url, headers=headers, timeout=8)
                 if cr.status_code == 200:
@@ -2362,7 +2474,7 @@ class ArchiveApp:
                         msg = c.get("commit", {}).get("message", "").splitlines()[0]
                         date = c.get("commit", {}).get("author", {}).get("date", "")
                         key = f"Commit: {sha} - {msg[:35]}"
-                        items.append(key)
+                        commit_items.append(key)
                         version_data[key] = {
                             "type": "Git Commit",
                             "ref": sha,
@@ -2371,24 +2483,14 @@ class ArchiveApp:
                             "body": c.get("commit", {}).get("message", "")
                         }
 
-                def update_combo():
-                    version_combo['values'] = items
-                    if items:
-                        version_combo.current(0)
-                        on_version_selected()
-                    action_status_lbl.config(text=f"Loaded {len(items)} available target(s).")
-                    refresh_btn.config(state=tk.NORMAL)
-
                 dialog.after(0, update_combo)
 
             except Exception as e:
                 def on_err():
                     action_status_lbl.config(text=f"Notice: GitHub check: {e}")
                     refresh_btn.config(state=tk.NORMAL)
-                    version_combo['values'] = items
-                    if items:
-                        version_combo.current(0)
-                        on_version_selected()
+                    dialog.after(0, update_combo)
+                dialog.after(0, on_err)
                 dialog.after(0, on_err)
 
         def fetch_versions_thread():
