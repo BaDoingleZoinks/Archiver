@@ -27,6 +27,7 @@ env/
 archive_history.log
 metadata_edits.log
 archive_tags_cache.json
+archive.txt
 
 # Backups and test scratch files
 yt_archive_app_backup*.py

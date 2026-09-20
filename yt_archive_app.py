@@ -20,7 +20,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -32,7 +32,8 @@ def normalize_title(text):
 class ArchiveApp:
     def __init__(self, root):
         self.root = root
-        self.github_repo = "aruiz/Archiver"
+        self.github_repo = "BaDoingleZoinks/Archiver"
+        self.ledger_file_var = tk.StringVar(value="archive.txt")
         self.root.title(f"The Archiver - v{APP_VERSION}")
         self.root.geometry("920x700")
         self.root.minsize(850, 650)
@@ -70,7 +71,8 @@ class ArchiveApp:
             try:
                 with open("settings.json", "r", encoding="utf-8") as f:
                     s = json.load(f)
-                self.github_repo = s.get("github_repo", getattr(self, "github_repo", "aruiz/Archiver"))
+                self.github_repo = s.get("github_repo", getattr(self, "github_repo", "BaDoingleZoinks/Archiver"))
+                self.ledger_file_var.set(s.get("ledger_file", "archive.txt"))
                 self.url_presets = s.get("url_presets", [])
                 self.tags_presets = s.get("tags_presets", [])
                 self.url_combo['values'] = self.url_presets
@@ -99,7 +101,8 @@ class ArchiveApp:
 
     def save_settings(self):
         s = {
-            "github_repo": getattr(self, "github_repo", "aruiz/Archiver"),
+            "github_repo": getattr(self, "github_repo", "BaDoingleZoinks/Archiver"),
+            "ledger_file": self.ledger_file_var.get(),
             "url": self.url_combo.get(),
             "url_presets": self.url_presets,
             "tags": self.tags_combo.get(),
@@ -328,24 +331,38 @@ class ArchiveApp:
         self.browse_btn = ttk.Button(dir_frame, text="Browse...", command=self.browse_dir)
         self.browse_btn.pack(side=tk.LEFT, padx=(5, 0))
         
+        # Archive Ledger File
+        ttk.Label(input_frame, text="Archive Ledger (.txt):").grid(row=7, column=0, sticky=tk.W, pady=5)
+        ledger_frame = ttk.Frame(input_frame)
+        ledger_frame.grid(row=7, column=1, sticky=tk.EW, padx=5, pady=5)
+        
+        self.ledger_entry = ttk.Entry(ledger_frame, textvariable=self.ledger_file_var)
+        self.ledger_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        self.choose_ledger_btn = ttk.Button(ledger_frame, text="Choose Ledger...", command=self.choose_ledger_file)
+        self.choose_ledger_btn.pack(side=tk.LEFT, padx=(5, 2))
+        
+        self.new_ledger_btn = ttk.Button(ledger_frame, text="New Ledger...", command=self.create_new_ledger_file)
+        self.new_ledger_btn.pack(side=tk.LEFT, padx=(2, 0))
+
         self.keep_files_var = tk.BooleanVar(value=False)
         self.keep_files_chk = ttk.Checkbutton(input_frame, text="Keep video files locally after successful upload", variable=self.keep_files_var)
-        self.keep_files_chk.grid(row=7, column=1, sticky=tk.W, padx=5, pady=5)
+        self.keep_files_chk.grid(row=8, column=1, sticky=tk.W, padx=5, pady=5)
         
         # Prevent Sleep Checkbox
         self.prevent_sleep_var = tk.BooleanVar(value=True)
         self.prevent_sleep_chk = ttk.Checkbutton(input_frame, text="Prevent PC from sleeping while archiving", variable=self.prevent_sleep_var)
-        self.prevent_sleep_chk.grid(row=8, column=1, sticky=tk.W, padx=5, pady=5)
+        self.prevent_sleep_chk.grid(row=9, column=1, sticky=tk.W, padx=5, pady=5)
         
         # Dark Mode Checkbox
         self.dark_mode_var = tk.BooleanVar(value=False)
         self.dark_mode_chk = ttk.Checkbutton(input_frame, text="Enable Dark Mode", variable=self.dark_mode_var, command=self.toggle_dark_mode)
-        self.dark_mode_chk.grid(row=9, column=1, sticky=tk.W, padx=5, pady=5)
+        self.dark_mode_chk.grid(row=10, column=1, sticky=tk.W, padx=5, pady=5)
         
         # Reverse Playlist Checkbox
         self.reverse_playlist_var = tk.BooleanVar(value=False)
         self.reverse_playlist_chk = ttk.Checkbutton(input_frame, text="Download Oldest First (Reverse Playlist)", variable=self.reverse_playlist_var)
-        self.reverse_playlist_chk.grid(row=10, column=1, sticky=tk.W, padx=5, pady=5)
+        self.reverse_playlist_chk.grid(row=11, column=1, sticky=tk.W, padx=5, pady=5)
         
         input_frame.columnconfigure(1, weight=1)
         
@@ -362,7 +379,7 @@ class ArchiveApp:
         self.stop_btn = ttk.Button(btn_frame, text="Stop", command=self.stop_archiving, state=tk.DISABLED)
         self.stop_btn.pack(side=tk.LEFT, padx=5)
         
-        self.open_archive_btn = ttk.Button(btn_frame, text="Open Ledger (archive.txt)", command=self.open_archive_file)
+        self.open_archive_btn = ttk.Button(btn_frame, text="Open Active Ledger", command=self.open_archive_file)
         self.open_archive_btn.pack(side=tk.LEFT, padx=5)
         
         self.open_settings_btn = ttk.Button(btn_frame, text="Open Settings", command=self.open_settings_file)
@@ -611,15 +628,70 @@ class ArchiveApp:
         except Exception as e:
             messagebox.showerror("Error", f"Could not open settings.json: {e}")
 
-    def open_archive_file(self):
-        """Opens archive.txt in Notepad."""
-        if os.path.exists("archive.txt"):
+    def get_ledger_path(self):
+        """Returns absolute path of the currently selected ledger file."""
+        val = getattr(self, "ledger_file_var", None)
+        path = val.get().strip() if val else ""
+        if not path:
+            path = "archive.txt"
+        return os.path.abspath(path)
+
+    def choose_ledger_file(self):
+        """Allows user to browse and select an existing ledger text file."""
+        init_dir = os.path.dirname(self.get_ledger_path())
+        if not os.path.isdir(init_dir):
+            init_dir = os.path.abspath(".")
+        filename = filedialog.askopenfilename(
+            title="Choose Archive Ledger File",
+            filetypes=[("Text Ledger Files (*.txt)", "*.txt"), ("All Files (*.*)", "*.*")],
+            initialdir=init_dir
+        )
+        if filename:
+            self.ledger_file_var.set(filename)
+            self.save_settings()
+            self.log(f"Active archive ledger switched to: {filename}")
+
+    def create_new_ledger_file(self):
+        """Allows user to create a new ledger file (e.g. for sharing or project-specific archiving)."""
+        init_dir = os.path.dirname(self.get_ledger_path())
+        if not os.path.isdir(init_dir):
+            init_dir = os.path.abspath(".")
+        filename = filedialog.asksaveasfilename(
+            title="Create New Archive Ledger",
+            defaultextension=".txt",
+            filetypes=[("Text Ledger Files (*.txt)", "*.txt"), ("All Files (*.*)", "*.*")],
+            initialdir=init_dir,
+            initialfile="my_archive_ledger.txt"
+        )
+        if filename:
             try:
-                os.startfile("archive.txt")
+                if not os.path.exists(filename):
+                    with open(filename, "w", encoding="utf-8") as f:
+                        f.write(f"# Archive Ledger Created {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                self.ledger_file_var.set(filename)
+                self.save_settings()
+                self.log(f"Created and selected new archive ledger: {filename}")
+                messagebox.showinfo("New Ledger Created", f"New ledger created and set as active:\n\n{filename}")
             except Exception as e:
-                self.log(f"Warning: Could not open archive.txt: {e}")
+                messagebox.showerror("Error", f"Could not create ledger file: {e}")
+
+    def open_archive_file(self):
+        """Opens the active ledger file in Notepad or default text editor."""
+        path = self.get_ledger_path()
+        if os.path.exists(path):
+            try:
+                os.startfile(path)
+            except Exception as e:
+                self.log(f"Warning: Could not open ledger: {e}")
         else:
-            messagebox.showinfo("Not Found", "archive.txt does not exist yet. It will be created when the first video is successfully uploaded.")
+            ans = messagebox.askyesno("File Not Found", f"Ledger file does not exist yet:\n\n{path}\n\nWould you like to create it now?")
+            if ans:
+                try:
+                    with open(path, "w", encoding="utf-8") as f:
+                        f.write(f"# Archive Ledger Created {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                    os.startfile(path)
+                except Exception as e:
+                    messagebox.showerror("Error", f"Could not create ledger file: {e}")
 
     def get_last_upload_time(self):
         """Reads archive_history.log and returns the timestamp of the last successful upload."""
@@ -732,8 +804,9 @@ class ArchiveApp:
                         
                 # Create a temporary clone of the archive ledger.
                 # yt-dlp will write to the temp ledger, and we only overwrite the real one upon successful IA upload.
-                if os.path.exists("archive.txt"):
-                    shutil.copy("archive.txt", "temp_archive.txt")
+                ledger_path = self.get_ledger_path()
+                if os.path.exists(ledger_path):
+                    shutil.copy(ledger_path, "temp_archive.txt")
                 elif os.path.exists("temp_archive.txt"):
                     os.remove("temp_archive.txt")
                         
@@ -849,13 +922,14 @@ class ArchiveApp:
                             
                 if already_archived:
                     self.log(f"\n[Duplicate Prevention] '{title}' is already archived on your account ({match_desc}).")
-                    self.log("Recording to local archive.txt ledger to skip on future runs...")
+                    ledger_path = self.get_ledger_path()
+                    self.log(f"Recording to local ledger ({os.path.basename(ledger_path)}) to skip on future runs...")
                     try:
-                        with open("archive.txt", "a", encoding="utf-8") as f:
+                        with open(ledger_path, "a", encoding="utf-8") as f:
                             archival_time = time.strftime('%Y-%m-%d %H:%M:%S')
                             f.write(f"# {title} (Account-consolidated: {archival_time})\nyoutube {video_id}\n\n")
                     except Exception as e:
-                        self.log(f"Warning: Could not update archive.txt: {e}")
+                        self.log(f"Warning: Could not update ledger: {e}")
                     self.record_successful_upload(video_id, title, tags_str, lang_code)
                     
                     # Clean up temp files and skip to next
@@ -944,11 +1018,12 @@ class ArchiveApp:
                             
                             # Write title and ID to master ledger upon SUCCESS
                             try:
-                                with open("archive.txt", "a", encoding="utf-8") as f:
+                                ledger_path = self.get_ledger_path()
+                                with open(ledger_path, "a", encoding="utf-8") as f:
                                     archival_time = time.strftime('%Y-%m-%d %H:%M:%S')
                                     f.write(f"# {title} (Archived: {archival_time})\nyoutube {video_id}\n\n")
                             except Exception as e:
-                                self.log(f"Warning: Could not update archive.txt: {e}")
+                                self.log(f"Warning: Could not update ledger: {e}")
                             
                             self.record_successful_upload(video_id, title, tags_str, lang_code)
                             break
@@ -1778,10 +1853,11 @@ class ArchiveApp:
             legacy_count = 0
             new_txt_entries = []
             
-            # Read current archive.txt IDs
+            # Read current ledger IDs
+            ledger_path = self.get_ledger_path()
             current_txt_ids = set()
-            if os.path.exists("archive.txt"):
-                with open("archive.txt", "r", encoding="utf-8") as f:
+            if os.path.exists(ledger_path):
+                with open(ledger_path, "r", encoding="utf-8") as f:
                     for line in f:
                         if line.startswith("youtube "):
                             current_txt_ids.add(line.strip().split()[1])
@@ -1832,14 +1908,14 @@ class ArchiveApp:
                 if count % 50 == 0:
                     self.root.after(0, lambda c=count, t=total: self.meta_sync_status_label.config(text=f"Fetched {c}/{t} items..."))
                     
-            # Consolidate into local archive.txt
+            # Consolidate into local ledger
             if new_txt_entries:
                 try:
-                    with open("archive.txt", "a", encoding="utf-8") as f:
+                    with open(ledger_path, "a", encoding="utf-8") as f:
                         for vid, t in new_txt_entries:
                             f.write(f"# {t} (Synced from Account)\nyoutube {vid}\n\n")
                 except Exception as e:
-                    print(f"Error appending to archive.txt: {e}")
+                    print(f"Error appending to ledger: {e}")
                     
             self.save_metadata_cache()
             self.root.after(0, lambda: self._on_ia_sync_complete(count, app_count, legacy_count, len(new_txt_entries)))
@@ -2122,14 +2198,14 @@ class ArchiveApp:
         repo_frame.pack(fill=tk.X, padx=12, pady=(10, 6))
 
         ttk.Label(repo_frame, text="GitHub Repo (user/repo):").grid(row=0, column=0, sticky=tk.W, padx=(0, 6), pady=3)
-        repo_var = tk.StringVar(value=getattr(self, "github_repo", "aruiz/Archiver"))
+        repo_var = tk.StringVar(value=getattr(self, "github_repo", "BaDoingleZoinks/Archiver"))
         repo_entry = ttk.Entry(repo_frame, textvariable=repo_var, width=32)
         repo_entry.grid(row=0, column=1, sticky=tk.EW, padx=5, pady=3)
 
         def save_repo_config():
             val = repo_var.get().strip()
             if not val or "/" not in val:
-                messagebox.showerror("Invalid Format", "Please enter the repository in the format: owner/repository\nExample: aruiz/Archiver", parent=dialog)
+                messagebox.showerror("Invalid Format", "Please enter the repository in the format: owner/repository\nExample: BaDoingleZoinks/Archiver", parent=dialog)
                 return
             self.github_repo = val
             self.save_settings()

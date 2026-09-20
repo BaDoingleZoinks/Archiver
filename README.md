@@ -6,7 +6,8 @@ A Python desktop application for backing up YouTube playlists and videos directl
 - **YouTube Video Archiver**: Batch download and upload YouTube playlists to Internet Archive with automatic metadata generation.
 - **Wayback Page Archiver**: Capture web pages, screenshots, and outlinks to the Wayback Machine.
 - **Metadata Editor**: View, edit, tag, and synchronize uploaded item metadata.
-- **In-App Version & Update Manager**: Seamlessly check for updates, upgrade to latest builds, or roll back to previous versions.
+- **Custom & Shared Ledgers**: Choose existing ledgers or create new ones (`Choose Ledger` / `New Ledger`). Put ledger files in shared cloud or network folders for team/device collaboration without conflict.
+- **In-App Version & Update Manager**: Seamlessly check for updates, upgrade to latest builds, or roll back to previous versions directly within the application.
 
 ## Setup & Running
 
