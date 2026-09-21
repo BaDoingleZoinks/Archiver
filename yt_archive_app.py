@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.5.0"
+APP_VERSION = "1.5.1"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -750,7 +750,7 @@ class ArchiveApp:
                         f.write(f"[{entry['date_str']}] | {entry['ts']} | {entry['vid']} | {entry['title']} | {ledger_str}\n")
 
                 if sorted_entries:
-                    newest_ts = sorted_entries[-1][1]
+                    newest_ts = sorted_entries[-1]["ts"]
                     if newest_ts > getattr(self, '_cached_remote_upload_time', 0):
                         self._cached_remote_upload_time = newest_ts
                         self._last_remote_check_time = time.time()
@@ -775,7 +775,7 @@ class ArchiveApp:
                 ))
             except Exception as e:
                 self.root.after(0, lambda: self.history_status_lbl.config(text="Sync failed"))
-                self.root.after(0, lambda err=e: messagebox.showerror("Sync Error", f"Could not sync history: {err}"))
+                self.root.after(0, lambda err=e: messagebox.showerror("Sync Error", f"Could not sync history: {type(err).__name__}: {err}"))
             finally:
                 self._syncing_history = False
                 self.root.after(0, lambda: self.history_sync_btn.config(state=tk.NORMAL))
