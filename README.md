@@ -95,7 +95,7 @@ The first tab of the app to be developed. A walkthrough of each field:
 
  ### Wayback Page Archiver
 
-The second feature to be developed. Intended for archiving Wikipedia references. 
+The second feature to be developed. Intended for archiving Wikipedia references. Admittedly the least polished functionality, currently. 
 
 Known issue: sometimes the tool says something that was archived, isn't. 
 
