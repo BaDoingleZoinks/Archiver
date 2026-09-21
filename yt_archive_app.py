@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.5.1"
+APP_VERSION = "1.6.0"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -342,11 +342,15 @@ class ArchiveApp:
         )
         self.lang_combo.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
         
-        # Browser Cookies
-        ttk.Label(input_frame, text="Browser Cookies (e.g. chrome, edge):").grid(row=4, column=0, sticky=tk.W, pady=5)
+        # Browser Cookies / cookies.txt
+        ttk.Label(input_frame, text="Cookies (Browser or .txt):").grid(row=4, column=0, sticky=tk.W, pady=5)
+        cookies_frame = ttk.Frame(input_frame)
+        cookies_frame.grid(row=4, column=1, sticky=tk.EW, padx=5, pady=5)
         self.cookies_var = tk.StringVar(value="")
-        self.cookies_entry = ttk.Entry(input_frame, textvariable=self.cookies_var, width=30)
-        self.cookies_entry.grid(row=4, column=1, sticky=tk.W, padx=5, pady=5)
+        self.cookies_entry = ttk.Entry(cookies_frame, textvariable=self.cookies_var)
+        self.cookies_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.cookies_browse_btn = ttk.Button(cookies_frame, text="Browse...", command=self.browse_cookies_file)
+        self.cookies_browse_btn.pack(side=tk.LEFT, padx=(5, 0))
 
         # Upload Delay
         ttk.Label(input_frame, text="Upload Delay (minutes):").grid(row=5, column=0, sticky=tk.W, pady=5)
@@ -631,6 +635,17 @@ class ArchiveApp:
         directory = filedialog.askdirectory(initialdir=self.dir_var.get(), title="Select Download Directory")
         if directory:
             self.dir_var.set(os.path.abspath(directory))
+
+    def browse_cookies_file(self):
+        cur = self.cookies_var.get().strip()
+        initial_dir = os.path.dirname(cur) if cur and os.path.exists(cur) else "."
+        filename = filedialog.askopenfilename(
+            initialdir=initial_dir,
+            title="Select Cookies File",
+            filetypes=[("Cookie / Text Files", "*.txt"), ("All Files", "*.*")]
+        )
+        if filename:
+            self.cookies_var.set(os.path.abspath(filename))
 
     def toggle_pause(self):
         if self.pause_event.is_set():
@@ -1252,13 +1267,20 @@ class ArchiveApp:
                 if reverse_playlist:
                     cmd.append("--playlist-reverse")
                     
-                cookies_browser = self.cookies_var.get().strip().lower()
-                if cookies_browser:
-                    cmd.extend([
-                        "--cookies-from-browser", cookies_browser,
-                        "--js-runtimes", "node",
-                        "--remote-components", "ejs:github"
-                    ])
+                cookies_input = self.cookies_var.get().strip()
+                if cookies_input:
+                    if os.path.isfile(cookies_input) or cookies_input.lower().endswith(".txt"):
+                        cmd.extend([
+                            "--cookies", cookies_input,
+                            "--js-runtimes", "node",
+                            "--remote-components", "ejs:github"
+                        ])
+                    else:
+                        cmd.extend([
+                            "--cookies-from-browser", cookies_input.lower(),
+                            "--js-runtimes", "node",
+                            "--remote-components", "ejs:github"
+                        ])
                     
                 cmd.append(url)
                 
@@ -1275,7 +1297,17 @@ class ArchiveApp:
                     self.current_process = process
                     
                     for line in process.stdout:
-                        self.log(f"[yt-dlp] {line.strip()}")
+                        line_clean = line.strip()
+                        self.log(f"[yt-dlp] {line_clean}")
+                        
+                        line_lower = line_clean.lower()
+                        if "could not copy" in line_lower and "cookie database" in line_lower:
+                            self.log("\n[DIAGNOSTIC] Browser cookie database is locked because the browser is currently running.")
+                            self.log("[DIAGNOSTIC] Fix: Close the browser completely, switch to 'firefox', or select an exported cookies.txt file using 'Browse...'.\n")
+                        elif "failed to decrypt with dpapi" in line_lower:
+                            self.log("\n[DIAGNOSTIC] Chrome App-Bound Encryption blocked cookie decryption (Chrome 127+ on Windows).")
+                            self.log("[DIAGNOSTIC] Fix: Switch to 'firefox', or export cookies with an extension and select the cookies.txt file using 'Browse...'.\n")
+                            
                         if self.stop_event.is_set():
                             process.terminate()
                             self.log("yt-dlp terminated by user.")
@@ -1384,7 +1416,9 @@ class ArchiveApp:
                     while True:
                         if self.stop_event.is_set() or not self.wait_if_paused():
                             return
-                        wait_needed = (delay_minutes * 60) - (time.time() - self.get_last_upload_time())
+                        standard_wait = (delay_minutes * 60) - (time.time() - self.get_last_upload_time())
+                        backoff_wait = getattr(self, 'retry_cooldown_until', 0) - time.time()
+                        wait_needed = max(standard_wait, backoff_wait)
                         if wait_needed <= 0:
                             break
                         if int(wait_needed) % 60 == 0 or wait_needed <= 10:
@@ -1432,8 +1466,12 @@ class ArchiveApp:
                         )
                         self.current_process = ia_process
                         
+                        hit_rate_limit = False
                         for line in ia_process.stdout:
-                            self.log(f"[ia upload] {line.strip()}")
+                            line_clean = line.strip()
+                            self.log(f"[ia upload] {line_clean}")
+                            if any(k in line_clean.lower() for k in ["429", "rate limit", "slowdown", "slow down", "reduce your request rate"]):
+                                hit_rate_limit = True
                             if self.stop_event.is_set():
                                 ia_process.terminate()
                                 self.log("ia upload terminated by user.")
@@ -1442,8 +1480,12 @@ class ArchiveApp:
                         ia_process.wait()
                         self.current_process = None
                         
+                        if hit_rate_limit:
+                            self.log("\n[WARNING] Internet Archive S3 write rate limit or throttling detected in upload log.")
+                        
                         if ia_process.returncode == 0:
                             upload_success = True
+                            self.retry_cooldown_until = 0
                             
                             # Write title and ID to master ledger upon SUCCESS
                             try:
@@ -1459,8 +1501,15 @@ class ArchiveApp:
                             self.log(f"\n[ERROR] ia upload failed with exit code {ia_process.returncode}.")
                             self.root.after(0, self.alert_user)
                             if attempt < max_attempts - 1:
-                                self.log("Going back to sleep for the cooldown period before retrying...")
+                                # Apply exponential backoff alongside user delay to respect IA S3 rate limits
+                                backoff_multiplier = 1.5 ** (attempt + 1)
+                                backoff_seconds = int((delay_minutes * 60) * backoff_multiplier)
+                                backoff_seconds = max(backoff_seconds, 120 * (attempt + 1))
+                                self.retry_cooldown_until = time.time() + backoff_seconds
                                 self.artificial_last_upload_time = time.time()
+                                wait_m = backoff_seconds // 60
+                                wait_s = backoff_seconds % 60
+                                self.log(f"Applying exponential backoff cooldown (attempt {attempt+1}/{max_attempts}): waiting {wait_m}m {wait_s}s before retrying...")
                             else:
                                 self.log("Max retries reached. Stopping pipeline to prevent hard ban.")
                                 break
@@ -2485,63 +2534,106 @@ class ArchiveApp:
             self.root.after(0, lambda i=idx, t=total, idnt=ident: self._update_meta_ui_progress(i, t, f"Updating ({i+1}/{t}): {idnt}..."))
             self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "Updating..."))
             
-            try:
-                item = ia.get_item(ident)
-                patch_dict = {}
-                if update_tags:
-                    patch_dict["subject"] = new_tags if new_tags else "REMOVE_TAG"
-                if update_lang:
-                    patch_dict["language"] = target_lang_code if target_lang_code else "REMOVE_TAG"
-                
-                # Apply metadata patch with priority -5
-                resp = item.modify_metadata(patch_dict, priority=-5)
-                
-                if resp.status_code == 200:
-                    success_count += 1
-                    # Update cache
-                    if ident in self.metadata_cache:
-                        if update_tags:
-                            self.metadata_cache[ident]["tags"] = new_tags
-                        if update_lang:
-                            self.metadata_cache[ident]["language"] = target_lang_code
-                        self.metadata_cache[ident]["last_updated"] = time.strftime("%Y-%m-%d %H:%M:%S")
-                    if item_data:
-                        if update_tags:
-                            item_data["tags"] = new_tags
-                        if update_lang:
-                            item_data["language"] = target_lang_code
-                        item_data["status"] = "✓ Updated"
-                        
-                    self.root.after(0, lambda idnt=ident, ut=update_tags, t=new_tags, ul=update_lang, l=target_lang_code: self._on_item_meta_success(idnt, ut, t, ul, l))
+            patch_dict = {}
+            if update_tags:
+                patch_dict["subject"] = new_tags if new_tags else "REMOVE_TAG"
+            if update_lang:
+                patch_dict["language"] = target_lang_code if target_lang_code else "REMOVE_TAG"
+
+            max_meta_retries = 3
+            meta_attempt = 0
+
+            while meta_attempt < max_meta_retries:
+                meta_attempt += 1
+                if self.meta_stop_event.is_set():
+                    break
+                try:
+                    item = ia.get_item(ident)
+                    # Apply metadata patch with priority -5 (atomic JSON-Patch on 'metadata' target)
+                    resp = item.modify_metadata(patch_dict, priority=-5)
                     
-                    # Audit log
-                    now_str = time.strftime("%Y-%m-%d %H:%M:%S")
-                    log_details = []
-                    if update_tags:
-                        log_details.append(f"Tags: {old_tags} -> {new_tags}")
-                    if update_lang:
-                        log_details.append(f"Lang: '{old_lang}' -> '{target_lang_code}'")
-                    with open("metadata_edits.log", "a", encoding="utf-8") as f:
-                        f.write(f"[{now_str}] SUCCESS | {ident} | {title} | {' | '.join(log_details)}\n")
-                else:
-                    fail_count += 1
-                    err_msg = resp.text[:100]
-                    if item_data:
-                        item_data["status"] = "✗ Error"
-                    self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✗ Error"))
-                    
-                    now_str = time.strftime("%Y-%m-%d %H:%M:%S")
-                    with open("metadata_edits.log", "a", encoding="utf-8") as f:
-                        f.write(f"[{now_str}] ERROR ({resp.status_code}) | {ident} | {title} | {err_msg}\n")
+                    if resp.status_code == 200:
+                        success_count += 1
+                        # Update cache
+                        if ident in self.metadata_cache:
+                            if update_tags:
+                                self.metadata_cache[ident]["tags"] = new_tags
+                            if update_lang:
+                                self.metadata_cache[ident]["language"] = target_lang_code
+                            self.metadata_cache[ident]["last_updated"] = time.strftime("%Y-%m-%d %H:%M:%S")
+                        if item_data:
+                            if update_tags:
+                                item_data["tags"] = new_tags
+                            if update_lang:
+                                item_data["language"] = target_lang_code
+                            item_data["status"] = "✓ Updated"
+                            
+                        self.root.after(0, lambda idnt=ident, ut=update_tags, t=new_tags, ul=update_lang, l=target_lang_code: self._on_item_meta_success(idnt, ut, t, ul, l))
                         
-            except Exception as e:
-                fail_count += 1
-                if item_data:
-                    item_data["status"] = "✗ Error"
-                self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✗ Error"))
-                now_str = time.strftime("%Y-%m-%d %H:%M:%S")
-                with open("metadata_edits.log", "a", encoding="utf-8") as f:
-                    f.write(f"[{now_str}] EXCEPTION | {ident} | {title} | {e}\n")
+                        # Audit log
+                        now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                        log_details = []
+                        if update_tags:
+                            log_details.append(f"Tags: {old_tags} -> {new_tags}")
+                        if update_lang:
+                            log_details.append(f"Lang: '{old_lang}' -> '{target_lang_code}'")
+                        with open("metadata_edits.log", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] SUCCESS | {ident} | {title} | {' | '.join(log_details)}\n")
+                        break
+                    elif resp.status_code in [429, 503]:
+                        # Internet Archive rate limit or write throttle hit
+                        backoff_sec = (2 ** meta_attempt) * 5  # 10s, 20s, 40s
+                        now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                        with open("metadata_edits.log", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] RATE_LIMIT ({resp.status_code}) | {ident} | Backing off {backoff_sec}s before retry {meta_attempt}/{max_meta_retries}\n")
+                        
+                        if meta_attempt < max_meta_retries:
+                            self.root.after(0, lambda i=idx, t=total, idnt=ident, s=backoff_sec, code=resp.status_code: 
+                                self._update_meta_ui_progress(i, t, f"Rate limited (HTTP {code}) on {idnt}. Backing off {s}s..."))
+                            self.root.after(0, lambda idnt=ident, s=backoff_sec: self._set_row_status(idnt, f"Backoff ({s}s)..."))
+                            for _ in range(int(backoff_sec * 10)):
+                                if self.meta_stop_event.is_set():
+                                    break
+                                time.sleep(0.1)
+                            continue
+                        else:
+                            fail_count += 1
+                            if item_data:
+                                item_data["status"] = "✗ Rate Limited"
+                            self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✗ Rate Limited"))
+                            with open("metadata_edits.log", "a", encoding="utf-8") as f:
+                                f.write(f"[{now_str}] ERROR (Max Retries) | {ident} | Rate limit persisted after {max_meta_retries} attempts\n")
+                            break
+                    else:
+                        fail_count += 1
+                        err_msg = resp.text[:100]
+                        if item_data:
+                            item_data["status"] = "✗ Error"
+                        self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✗ Error"))
+                        now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                        with open("metadata_edits.log", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] ERROR ({resp.status_code}) | {ident} | {title} | {err_msg}\n")
+                        break
+                        
+                except Exception as e:
+                    if meta_attempt < max_meta_retries:
+                        backoff_sec = (2 ** meta_attempt) * 3
+                        self.root.after(0, lambda i=idx, t=total, idnt=ident, s=backoff_sec: 
+                            self._update_meta_ui_progress(i, t, f"Network error on {idnt}. Retrying in {s}s..."))
+                        for _ in range(int(backoff_sec * 10)):
+                            if self.meta_stop_event.is_set():
+                                break
+                            time.sleep(0.1)
+                        continue
+                    else:
+                        fail_count += 1
+                        if item_data:
+                            item_data["status"] = "✗ Error"
+                        self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✗ Error"))
+                        now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                        with open("metadata_edits.log", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] EXCEPTION | {ident} | {title} | {e}\n")
+                        break
                     
             # Courtesy delay between items (1.5s) to respect IA rate limits
             for _ in range(15):
