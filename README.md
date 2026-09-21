@@ -60,8 +60,8 @@ The first tab of the app to be developed. A walkthrough of each field:
   - Personal testing found 15 minutes to be the shortest delay when mass archiving files. Experiment at your own risk.
 
 - Download Directory:
-  - Local directory where the tool with keep video files prior to uploading.
-  - Though one can disable the permanent saving of the video files, the tool needs a space to create a temporary file to upload. If the option to save videos locally is disabled, the file will be deleted after a confirmed successful upload.
+  - Local directory where the tool will keep the video files prior to uploading.
+  - Though one can disable the permanent saving of the video files, the tool needs a temporary space to store the file you will upload. If the option to save videos locally is disabled, the file will be deleted after a confirmed successful upload.
 
 - Active ledger:
   - .txt file that keeps track of videos archived with timestamps
