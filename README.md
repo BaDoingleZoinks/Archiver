@@ -72,11 +72,11 @@ The first tab of the app to be developed. A walkthrough of each field:
 - Keep Video Files Locally After Upload
   - When enabled, saves downloaded videos to local directory
 
-- Prevent PC from sleeping whole archiving
+- Prevent PC from sleeping while archiving
   - Useful if you want to leave the PC on to archive content while you're away.
 
 - Enable Dark Mode
-  - To prevent you from flash banging yourself at night   
+  - To prevent you from flash banging yourself at night!  
 
 - Download oldest first (reverse playlist)
   - Will archive content starting from the oldest, instead of the newest
