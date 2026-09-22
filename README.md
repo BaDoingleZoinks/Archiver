@@ -95,9 +95,7 @@ The first tab of the app to be developed. A walkthrough of each field:
 
  ### Wayback Page Archiver
 
-The second feature to be developed. Intended for archiving Wikipedia references. Admittedly the least polished functionality, currently. 
-
-Known issue: sometimes the tool says something that was archived, isn't. 
+The second feature to be developed. Intended for archiving Wikipedia references. Admittedly the least polished functionality, currently, as it's overall not as problematic to do it without the app, unlike mass archiving and tagging videos. 
 
 Paste the URL of the Wikipedia article you are editing and click Fetch References on the right. It will populate the page with all links present in the page. It will then check the Wayback Machine to see if each URL has already been archived and when. It will also tell you if a link is dead (note: sometimes the reference is alive but shows up as dead. This happens when the dead link is the http version, but if you change it to https on your browser the same content will be available. It is suggested that you change the reference to the https version and then archive it). 
 
