@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.6.0"
+APP_VERSION = "1.6.1"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -1593,7 +1593,7 @@ class ArchiveApp:
             valid_links = []
             for link in sorted(links):
                 if link and link.startswith('http') and 'archive.org' not in link:
-                    valid_links.append(link.strip())
+                    valid_links.append(link)
                     
             if not valid_links:
                 self.root.after(0, lambda: self.tab2_status_var.set("No external references found."))
@@ -1680,35 +1680,26 @@ class ArchiveApp:
                 self.root.after(0, self._mark_url_dead, url)
                 
             # Wayback Machine check
-            clean_url = url.split('#')[0]
-            success = False
-            for attempt in range(2):
-                try:
-                    avail_url = f"https://archive.org/wayback/available?url={clean_url}"
-                    resp = requests.get(avail_url, headers=headers, timeout=10)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        snapshots = data.get("archived_snapshots", {})
-                        closest = snapshots.get("closest")
-                        if closest and closest.get("available"):
-                            ts = closest.get("timestamp", "")
-                            if len(ts) >= 8:
-                                formatted_date = f"{ts[:4]}-{ts[4:6]}-{ts[6:8]}"
-                                self.root.after(0, self._update_avail_label, url, f"Last archived: {formatted_date}", "green")
-                            else:
-                                self.root.after(0, self._update_avail_label, url, "Archived (Date Unknown)", "green")
-                            success = True
-                            break
-                    
-                    if attempt == 0:
-                        time.sleep(1.0) # wait before retry if not found
-                except Exception as e:
-                    if attempt == 1:
-                        self.root.after(0, self._update_avail_label, url, f"Check error: {str(e)[:40]}", "orange")
-                        success = True # prevent 'not found' overriding the error
-
-            if not success:
-                self.root.after(0, self._update_avail_label, url, "Not found in archive", "red")
+            try:
+                avail_url = f"https://archive.org/wayback/available?url={url}"
+                resp = requests.get(avail_url, headers=headers, timeout=10)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    snapshots = data.get("archived_snapshots", {})
+                    closest = snapshots.get("closest")
+                    if closest and closest.get("available"):
+                        ts = closest.get("timestamp", "")
+                        if len(ts) >= 8:
+                            formatted_date = f"{ts[:4]}-{ts[4:6]}-{ts[6:8]}"
+                            self.root.after(0, self._update_avail_label, url, f"Last archived: {formatted_date}", "green")
+                        else:
+                            self.root.after(0, self._update_avail_label, url, "Archived (Date Unknown)", "green")
+                    else:
+                        self.root.after(0, self._update_avail_label, url, "Not found in archive", "red")
+                else:
+                    self.root.after(0, self._update_avail_label, url, f"Availability check failed (HTTP {resp.status_code})", "orange")
+            except Exception as e:
+                self.root.after(0, self._update_avail_label, url, f"Check error: {str(e)[:40]}", "orange")
                 
             time.sleep(0.5) # Prevent aggressive spamming of availability API
             
