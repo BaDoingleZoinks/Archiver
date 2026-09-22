@@ -27,10 +27,6 @@ env/
 archive_history.log
 metadata_edits.log
 archive_tags_cache.json
-# Local user ledgers and scratch text files (keep template & requirements tracked)
-*.txt
-!archive_template.txt
-!requirements.txt
 
 # Backups and test scratch files
 yt_archive_app_backup*.py
@@ -47,3 +43,9 @@ settings.json
 Thumbs.db
 .vscode/
 .idea/
+
+# Publish script
+publish_build.bat
+
+archive.txt
+test_archive_ledger.txt

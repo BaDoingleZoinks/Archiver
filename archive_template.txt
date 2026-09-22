@@ -1,6 +1,0 @@
-# The Archiver - Ledger Template
-# This file tracks videos that have already been archived to prevent re-downloading.
-# Format:
-# # Title of the video (Archived: YYYY-MM-DD HH:MM:SS)
-# youtube VIDEO_ID
-#
