@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.6.1"
+APP_VERSION = "1.7.0"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -180,7 +180,7 @@ class ArchiveApp:
             self.save_url_btn.config(state=tk.DISABLED, text="Fetching...")
             try:
                 cmd = [self.get_executable("yt-dlp"), "--print", "%(playlist_title)s", "--playlist-items", "1", val]
-                result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", creationflags=subprocess.CREATE_NO_WINDOW)
                 title = result.stdout.strip()
                 if not title or title == "NA":
                     title = "Unknown Playlist"
@@ -1142,7 +1142,7 @@ class ArchiveApp:
         remote_time = getattr(self, '_cached_remote_upload_time', 0)
         return max(log_time, artificial_time, remote_time)
 
-    def record_successful_upload(self, video_id, title, tags_str=None, lang_code=None, ledger_name="Main Archive"):
+    def record_successful_upload(self, video_id, title, tags_str=None, lang_code=None, ledger_name="Main Archive", creator=""):
         """Records a successful upload to the human-readable history log."""
         try:
             now = time.time()
@@ -1167,6 +1167,7 @@ class ArchiveApp:
                 "date": date_str,
                 "source": "app",
                 "ledger": ledger_label,
+                "creator": creator,
                 "last_updated": date_str
             }
             self.save_metadata_cache()
@@ -1385,7 +1386,7 @@ class ArchiveApp:
                             f.write(f"# {title} (Account-consolidated: {archival_time})\nyoutube {video_id}\n\n")
                     except Exception as e:
                         self.log(f"Warning: Could not update ledger: {e}")
-                    self.record_successful_upload(video_id, title, tags_str, lang_code, active_ledger_name)
+                    self.record_successful_upload(video_id, title, tags_str, lang_code, active_ledger_name, uploader)
                     
                     # Clean up temp files and skip to next
                     for f in os.listdir(temp_dir):
@@ -1495,7 +1496,7 @@ class ArchiveApp:
                             except Exception as e:
                                 self.log(f"Warning: Could not update ledger: {e}")
                             
-                            self.record_successful_upload(video_id, title, tags_str, lang_code, active_ledger_name)
+                            self.record_successful_upload(video_id, title, tags_str, lang_code, active_ledger_name, uploader)
                             break
                         else:
                             self.log(f"\n[ERROR] ia upload failed with exit code {ia_process.returncode}.")
@@ -1899,6 +1900,9 @@ class ArchiveApp:
         
         self.meta_sel_count_label = ttk.Label(sel_row, text="Selected: 0 / 0", font=("TkDefaultFont", 9, "bold"))
         self.meta_sel_count_label.pack(side=tk.LEFT, padx=5)
+        
+        self.meta_export_btn = ttk.Button(sel_row, text="Export Table", command=self.export_metadata_table)
+        self.meta_export_btn.pack(side=tk.RIGHT, padx=5)
 
         # 2. Center Table (Treeview)
         tree_frame = ttk.Frame(self.tab3_frame)
@@ -2262,6 +2266,75 @@ class ArchiveApp:
             self.select_filtered_items()
         else:
             self.deselect_all_items()
+
+    def export_metadata_table(self):
+        """Exports the currently displayed metadata table to a file."""
+        if not self.meta_tree.get_children():
+            messagebox.showinfo("Export", "Table is empty. Nothing to export.")
+            return
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            initialfile=f"content_snapshot_{timestamp}",
+            filetypes=[("CSV files", "*.csv"), ("JSON files", "*.json"), ("Text files", "*.txt")],
+            title="Export Metadata Table Snapshot"
+        )
+        if not file_path:
+            return
+
+        try:
+            # Map identifiers to items
+            ident_map = {item["identifier"]: item for item in getattr(self, "meta_all_items", [])}
+            
+            export_data = []
+            for child_id in self.meta_tree.get_children():
+                item = ident_map.get(child_id)
+                if item:
+                    # Capture useful fields
+                    export_data.append({
+                        "identifier": item.get("identifier", ""),
+                        "video_id": item.get("video_id", ""),
+                        "title": item.get("title", ""),
+                        "date": item.get("date", ""),
+                        "language": item.get("language", ""),
+                        "tags": item.get("tags", []),
+                        "status": item.get("status", ""),
+                        "source": item.get("source", ""),
+                        "creator": item.get("creator", "")
+                    })
+            
+            ext = os.path.splitext(file_path)[1].lower()
+            if ext == ".json":
+                with open(file_path, "w", encoding="utf-8-sig") as f:
+                    json.dump(export_data, f, indent=4, ensure_ascii=False)
+            elif ext == ".csv":
+                import csv
+                with open(file_path, "w", newline='', encoding="utf-8-sig") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["identifier", "video_id", "title", "date", "language", "tags", "status", "source", "creator"])
+                    for d in export_data:
+                        writer.writerow([
+                            d["identifier"],
+                            d["video_id"],
+                            d["title"],
+                            d["date"],
+                            d["language"],
+                            ", ".join(d["tags"]) if isinstance(d["tags"], list) else d["tags"],
+                            d["status"],
+                            d["source"],
+                            d["creator"]
+                        ])
+            else:
+                with open(file_path, "w", encoding="utf-8-sig") as f:
+                    for d in export_data:
+                        tags_str = ", ".join(d["tags"]) if isinstance(d["tags"], list) else d["tags"]
+                        f.write(f"ID: {d['identifier']} | Title: {d['title']} | Date: {d['date']} | Tags: {tags_str}\n")
+            
+            messagebox.showinfo("Export Successful", f"Exported {len(export_data)} items to {os.path.basename(file_path)}")
+            
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Failed to export table:\n{str(e)}")
 
     def sort_metadata_table(self, col):
         """Sorts table by column."""
