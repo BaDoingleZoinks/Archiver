@@ -2,7 +2,15 @@
 
 All notable changes to **The Archiver**, extracted directly from the official GitHub repository (`BaDoingleZoinks/Archiver`) commit history.
 
-## [1.6.0] - Latest
+## [1.6.2] - Latest
+### Added
+- **Data Export**: Added the ability to export a table (CSV, TXT, JSON) with all archived videos and their tags for external analysis.
+
+## [1.6.1]
+### Fixed
+- **Wayback Machine**: Fixed availability check and URL fragments.
+
+## [1.6.0]
 ### Added
 - **Browser & Cookies Support**: Added support for `cookies.txt` imports to bypass login walls and age-restrictions.
 - **Diagnostic Tools**: Added locked browser diagnostics to help troubleshoot connection issues.
