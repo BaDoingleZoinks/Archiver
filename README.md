@@ -1,14 +1,14 @@
 # The Archiver
 
-A vibecoded Python desktop application for backing up YouTube videos and Wikipedia reference URLs directly to the Internet Archive, along with Wayback Machine snapshots and metadata editing tools.
+A vibecoded, Python-based desktop application for backing up YouTube videos and Wikipedia reference URLs directly to the Internet Archive, along with Wayback Machine snapshots and bulk metadata editing tools.
 
 ## Features
 - **YouTube Video Archiver**: Batch download and upload YouTube playlist or channel contents to Internet Archive with automatic metadata generation and batch metadata editing.
 - **Wayback Page Archiver**: Collect Wikipedia reference URLs and easily archive them to the Wayback Machine.
-- **Metadata Editor**: View, edit, tag, and synchronize uploaded item metadata from your Archive.org account across multiple devices.
+- **Metadata Editor**: Batch view, edit, tag, and synchronize uploaded item metadata from your Archive.org account across multiple devices.
 - **Custom & Shared Ledgers**: Ledger system prevents duplicate file processing. Choose existing ledgers or create new ones. Put ledger files in shared cloud or network folders for team/device collaboration without conflict.
 - **Internet Archive Account Setup**: Automatic first-run setup to configure your personal `ia.ini` credentials (via S3 API keys or Archive.org login). Credentials remain strictly in your private local profile and are never tracked in Git.
-- **In-App Version & Update Manager**: Seamlessly check for updates, upgrade to latest builds, or roll back to previous versions directly within the application.
+- **In-App Version & Update Manager**: Check for updates, upgrade to latest builds, or roll back to previous versions directly within the application.
 
 ## Setup & Running
 
@@ -27,9 +27,11 @@ A vibecoded Python desktop application for backing up YouTube videos and Wikiped
    - Click the Keys button on the top right of the window to access your login at any time.
 
 ### Updating
+
 - On the top right, click Check for Updates/Sync
 - Enter your update repository (this one, or your fork)
 - Click Fetch Versions to check for updates. Update to the latest version or roll back to a previous build saved locally.
+- if not, run `update_and_run.bat` before launching.
 
 ## Use
 
@@ -38,26 +40,27 @@ A vibecoded Python desktop application for backing up YouTube videos and Wikiped
 The first tab of the app to be developed. A walkthrough of each field:
 
 - Youtube Playlist URL:
-  - Paste the URL of the playlist of channel whose contents you want to archive. Playlists must be Public or Unlisted, but cannot be Private.
+  - Paste the URL of the playlist of channel whose contents you want to archive. Playlists must be Public or Unlisted; cannot be Private.
   - Allows for naming and renaming of URLs for ease of use.
-  - Can save multiple URLs as presets to quickly switch between them.
+  - Can save URLs as presets to quickly switch between them.
 
 - Custom tags (comma-separated):
   - Type the Internet Archive subjects tags to mark your content with, separated by commas.
   - Allows saving presets to quickly switch between them.
 
 - Max Resolution:
-  - Can set the maximum download resolution, to avoid downloading large files
+  - Can set the maximum download resolution, to avoid downloading large files.
  
 - Metadata language:
-  - Language tag that will be set in Internet Archive
+  - Language tag that will be set on your videos.
  
 - Browser cookies:
   - Type in the name of your browser and the tool will retrieve your account cookies in order to prevent download errors and IP timeouts/bans.
  
 - Upload delay:
   - Delay (in minutes) between Internet Archive uploads to avoid being rate limited.
-  - Personal testing found 15 minutes to be the shortest delay when mass archiving files. Experiment at your own risk.
+  - App automatically applies exponential delays in case of rate limits, and stops after three failed attempts to prevent IP bans.
+  - Personal testing found 15 minutes to be the shortest usable delay when mass archiving files. Experiment at your own risk.
 
 - Download Directory:
   - Local directory where the tool will keep the video files prior to uploading.
@@ -67,7 +70,7 @@ The first tab of the app to be developed. A walkthrough of each field:
   - .txt file that keeps track of videos archived with timestamps
   - The tool will not archive any video already found in the ledger. This is to prevent duplicate uploads.
   - Can choose an existing ledger or create a new one.
-  - Tip: save ledger to a network folder like Google drive to be able to sync it across devices.
+  - Tip: save the ledger to a network folder like Google Drive to be able to sync it across devices!
  
 - Keep Video Files Locally After Upload
   - When enabled, saves downloaded videos to local directory
@@ -88,8 +91,8 @@ The first tab of the app to be developed. A walkthrough of each field:
   - Will open the Settings.json file on your default app
   - This is where your tag presets and other settings are saved. 
 
- Click on Start Archiving and you will see the activity log populate. The tool will scan the channel or playlist, download a video, parse its metadata, and upload it with your selected tags to your Internet Archive. It will then download the next video, wait for the configured delay, and upload it. 
- On the right you will see the Time Since Last Upload. The timer is synced to your account, so you can turn the tool on on another device and not get rate limited; the tool will wait the correct time. 
+ Click on Start Archiving and you will see the activity log populate. The tool will scan the channel or playlist, download a video, parse its metadata, and upload it with your selected tags to your Internet Archive. It will then download the next video, wait for the configured delay, and upload it. The tool skips any video previously recorded on your selected ledger file to avoid duplicate uploads. 
+ On the right you will see the Time Since Last Upload. The timer is synced to your account, so you can turn on the tool on another device and not get rate limited; the tool will wait the correct time. 
 
  The Archive History tab will display all items uploaded. If you use the tool on multiple devices, it will be missing the items uploaded from other devices. Click Sync and Refresh From Account to sync your uploads from your devices. The log will also show from which ledger the file was uploaded.  
 
@@ -97,9 +100,9 @@ The first tab of the app to be developed. A walkthrough of each field:
 
 The second feature to be developed. Intended for archiving Wikipedia references. Admittedly the least polished functionality, currently, as it's overall not as problematic to do it without the app, unlike mass archiving and tagging videos. 
 
-Paste the URL of the Wikipedia article you are editing and click Fetch References on the right. It will populate the page with all links present in the page. It will then check the Wayback Machine to see if each URL has already been archived and when. It will also tell you if a link is dead (note: sometimes the reference is alive but shows up as dead. This happens when the dead link is the http version, but if you change it to https on your browser the same content will be available. It is suggested that you change the reference to the https version and then archive it). 
+Paste the URL of the Wikipedia article you are editing and click Fetch References on the right. It will populate the page with all links present in the article. It will then check the Wayback Machine to see if each URL has already been archived, and when. It will also tell you if a link is dead (note: sometimes the reference is alive but shows up as dead. This happens when the dead link is the http version, but if you look up the referece online, the article will sometimes be available under a new https URL. It is suggested that you change the reference in the article to the https version and then archive it). 
 
-There are checkboxes for saving a screenshot of the archived page, as well as its outlinks, and saving it to your account, as you would be able to do on the Wayback Machine normally. 
+There are checkboxes for saving a screenshot of the archived page, as well as its outlinks, and saving it to your Web Archive, as you would be able to do on the Wayback Machine normally. 
 
 Click on Archive Now to save a page to the Wayback Machine. It will output the archived URL. Don't forget to insert it to the references list in the article!
 
@@ -108,14 +111,19 @@ Click on Archive Now to save a page to the Wayback Machine. It will output the a
 
 Third main tab. Allows you to bulk edit the metadata of the videos you upload to Internet Archive.
 
-- In the main table you will see all the content you uploaded with the Youtube Video Archiver tab.
+- In the main table you will see all the content you've uploaded with the Youtube Video Archiver tab.
+  - As well as all manually archived content ("legacy" content).
 - You can search for title or tag terms with the search bar on the top.
-- Select the videos you want to edit with the checkbox. Type your tags on the bottom field or select from your tag presets too. You can create and remove presets as well. Tip: if you double click the tags of an item on the list, it will populate those tags into the text field.
-- Click on Update Metadata for Selected Items to apply the tags to the selected items
-- Note: it takes some time for the tags to apply. If you refresh the tab with the Sync With Account button, or immediately check your Archive, you might not see the changes take effect until a while has passed.
-- WARNING: the tool does not deselect items automatically. Make sure you click on Deselect All to avoid giving all your items the same tag!
-  - Likewise, mind the difference between Select Filtered and Select All
+- Select the videos you want to edit with the checkboxes. Type your tags on the bottom field or select from your tag presets. You can create and remove presets from here as well. 
+  - Tip: if you double click the tags of an item on the list, it will populate those tags into the tags field.
+- Click on Update Metadata for Selected Items to bulk apply the tags to the selected items
+  - Note: it takes some time for the tags to apply. If you immediately refresh the tab with the Sync With Account button, or immediately check your Archive, you might not see the changes take effect until a while has passed.
+- WARNING: the tool does not deselect items automatically! Make sure you click on Deselect All to avoid giving all your items the same tag!
+  - Likewise, mind the difference between Select Filtered and Select All.
 - Click Sync With Account to sync the list across devices.
-- You can also change the language of the files you've uploaded.
+- Click Export Table to export a snapshot of the videos archived in your account into csv, text or json format. This will let you analyze your content elsewhere in a better interface than from within the app.
+  - Note that what is saved is a snapshot. If you update the tags of content after exporting the table, the table will naturally not be automatically updated. 
+  - Use case example: export content table and have your LLM of choice identify all mistagged videos in one go. Or analyze what portion of your archives comes from each uploader. Or whatever you find useful! 
+- You can also change the language of the files you've uploaded as a batch.
 
 
