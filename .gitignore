@@ -44,5 +44,8 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Maintainer scripts (not distributed to users)
+publish_build.bat
+
 archive.txt
 test_archive_ledger.txt
