@@ -44,8 +44,5 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Publish script
-publish_build.bat
-
 archive.txt
 test_archive_ledger.txt
