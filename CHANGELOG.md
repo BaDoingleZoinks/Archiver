@@ -2,7 +2,11 @@
 
 All notable changes to **The Archiver**, extracted directly from the official GitHub repository (`BaDoingleZoinks/Archiver`) commit history.
 
-## [1.7.0] - Latest
+## [1.8.0] - Latest
+### Added
+- **Add**: Batch Metadata Import with Preview window and Title editing
+
+## [1.7.0]
 ### Added
 - **Data Export**: Added the ability to export a table (CSV, TXT, JSON) with all archived videos and their tags for external analysis.
 

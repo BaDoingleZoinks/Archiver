@@ -114,16 +114,31 @@ Third main tab. Allows you to bulk edit the metadata of the videos you upload to
 - In the main table you will see all the content you've uploaded with the Youtube Video Archiver tab.
   - As well as all manually archived content ("legacy" content).
 - You can search for title or tag terms with the search bar on the top.
-- Select the videos you want to edit with the checkboxes. Type your tags on the bottom field or select from your tag presets. You can create and remove presets from here as well. 
-  - Tip: if you double click the tags of an item on the list, it will populate those tags into the tags field.
-- Click on Update Metadata for Selected Items to bulk apply the tags to the selected items
-  - Note: it takes some time for the tags to apply. If you immediately refresh the tab with the Sync With Account button, or immediately check your Archive, you might not see the changes take effect until a while has passed.
+
+Bulk metadata editing:
+
+- Select the videos you want to edit with the checkboxes on the left. Type your tags (comma-separated) on the bottom field or select from your tag presets. You can create and remove presets from here as well. 
+  - Tip: if you double click the tags of an existing row on the list, it will populate those tags into the tags field!
+- Click on Update Metadata for Selected Items on the bottom to bulk apply the tags to the selected items.
+  - Note: though the tags refresh immediately in the app, sometimes it takes some time for the tags to apply on Archive.org. If you immediately refresh the tab with the Sync With Account button, or immediately check your Archive, you might not see the changes take effect until a while has passed.
 - WARNING: the tool does not deselect items automatically! Make sure you click on Deselect All to avoid giving all your items the same tag!
   - Likewise, mind the difference between Select Filtered and Select All.
 - Click Sync With Account to sync the list across devices.
-- Click Export Table to export a snapshot of the videos archived in your account into csv, text or json format. This will let you analyze your content elsewhere in a better interface than from within the app.
-  - Note that what is saved is a snapshot. If you update the tags of content after exporting the table, the table will naturally not be automatically updated. 
-  - Use case example: export content table and have your LLM of choice identify all mistagged videos in one go. Or analyze what portion of your archives comes from each uploader. Or whatever you find useful! 
 - You can also change the language of the files you've uploaded as a batch.
+
+
+A powerful tool in this tab is the ability to export and import your table of archived content to bulk update metadata even easier!
+
+- Click Export Table to export a snapshot of the videos archived in your account into CSV, text, or JSON format. This will let you analyze your content elsewhere in a better interface than from within the app.
+  - Note: What is saved is a static snapshot. If you update the tags of your content in the app after exporting, your exported file will naturally not update automatically.
+- What is really powerful is that you can now feed this table to your LLM of choice. For instance, you can ask an AI to identify all items with a placeholder tag (like the name of the channel or playlist being archived) and replace it with a set of highly specific, appropriate tags for each video—without you having to check all entries one by one.
+- You do this by telling the AI to output the new data to a CSV or JSON file. This new table only strictly requires an Identifier (or ID) column so the app knows which video it is, and then the columns for the metadata you want to modify (Title, Language, Tags, etc). Any extra columns the AI generates are safely ignored.
+  - Example prompt: "Read this file. For all rows with placeholder tag ABC, replace the tags with an appropriate set (comma-separated) to match the video title and topic. Do not output rows that do not match the criteria. Output as a downloadable CSV UTF-8 file with table headers ID, Video ID, Language, Title, and Tags."
+  - Sometimes (inconsistent issue) AI's have a hard time parsing the file because of the BOM character encoding that ensures some symbols like accent marks don't come out all mangled when imported to Excel. Try specifying something like "Technical Note: This CSV contains a UTF-8 BOM. When reading or analyzing this dataset with Python, you must load it using pandas.read_csv with encoding='utf-8-sig' to avoid \ufeff header parsing errors." when prompting. Sometimes it helps. 
+  - It would not be a bad idea to engineer the prompt so that it tries to reuse your tag presets, but I'll leave that implementation up to you.	
+	
+- Then, click on Import Table (Batch) and select your edits file. The tool will find the differences between your live account and the edits in the uploaded table. Before it applies anything to the Internet Archive, it will pop up a window allowing you to carefully preview every single change.
+  - *And please, do carefully review the changes in the preview window, as a bulk mistake can be hard to fix!*
+
 
 

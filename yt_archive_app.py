@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.7.0"
+APP_VERSION = "1.8.0"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -1903,6 +1903,9 @@ class ArchiveApp:
         
         self.meta_export_btn = ttk.Button(sel_row, text="Export Table", command=self.export_metadata_table)
         self.meta_export_btn.pack(side=tk.RIGHT, padx=5)
+        
+        self.meta_import_btn = ttk.Button(sel_row, text="Import Table (Batch)", command=self.import_metadata_table)
+        self.meta_import_btn.pack(side=tk.RIGHT, padx=5)
 
         # 2. Center Table (Treeview)
         tree_frame = ttk.Frame(self.tab3_frame)
@@ -2336,6 +2339,329 @@ class ArchiveApp:
         except Exception as e:
             messagebox.showerror("Export Error", f"Failed to export table:\n{str(e)}")
 
+
+    def import_metadata_table(self):
+        """Imports a metadata table snapshot, identifies changes, and applies them."""
+        if getattr(self, "meta_is_running", False) and not self.meta_stop_event.is_set():
+            messagebox.showwarning("Busy", "A metadata update is currently running. Please cancel it or wait for it to finish.")
+            return
+
+        file_path = filedialog.askopenfilename(
+            filetypes=[("CSV & JSON files", "*.csv *.json"), ("CSV files", "*.csv"), ("JSON files", "*.json"), ("All files", "*.*")],
+            title="Import Metadata Table Snapshot"
+        )
+        if not file_path:
+            return
+
+        try:
+            ext = os.path.splitext(file_path)[1].lower()
+            import_data = []
+            if ext == ".json":
+                with open(file_path, "r", encoding="utf-8-sig") as f:
+                    import_data = json.load(f)
+            elif ext == ".csv":
+                import csv
+                with open(file_path, "r", encoding="utf-8-sig") as f:
+                    reader = csv.DictReader(f)
+                    import_data = list(reader)
+            else:
+                messagebox.showerror("Format Error", "Unsupported file format. Please use CSV or JSON.")
+                return
+
+            jobs = []
+            scanned = 0
+            skipped_missing_local = 0
+            no_change = 0
+
+            for row in import_data:
+                # Normalize keys to lowercase to avoid case-sensitivity issues with Excel
+                norm_row = {str(k).strip().lower(): v for k, v in row.items() if k}
+                
+                ident = norm_row.get("identifier") or norm_row.get("id")
+                if not ident:
+                    continue
+                scanned += 1
+                
+                if ident not in self.metadata_cache:
+                    skipped_missing_local += 1
+                    continue
+
+                raw_tags = norm_row.get("tags")
+                new_tags = []
+                if isinstance(raw_tags, list):
+                    new_tags = [str(t).strip() for t in raw_tags if str(t).strip()]
+                elif isinstance(raw_tags, str):
+                    new_tags = [t.strip() for t in raw_tags.split(",") if t.strip()]
+
+                new_lang = norm_row.get("language", "").strip()
+                new_title = norm_row.get("title", "").strip()
+
+                current_tags = self.metadata_cache[ident].get("tags", [])
+                current_lang = self.metadata_cache[ident].get("language", "")
+                current_title = self.metadata_cache[ident].get("title", "")
+
+                update_tags = set(new_tags) != set(current_tags)
+                update_lang = bool(new_lang and new_lang != current_lang)
+                update_title = bool(new_title and new_title != current_title)
+
+                if update_tags or update_lang or update_title:
+                    jobs.append({
+                        "identifier": ident,
+                        "update_tags": update_tags,
+                        "new_tags": new_tags,
+                        "update_lang": update_lang,
+                        "new_lang": new_lang,
+                        "update_title": update_title,
+                        "new_title": new_title
+                    })
+                else:
+                    no_change += 1
+
+            missing_from_file = len(self.metadata_cache) - (scanned - skipped_missing_local)
+            if missing_from_file < 0:
+                missing_from_file = 0
+
+            if not jobs:
+                messagebox.showinfo("Import", "No metadata differences found. Everything is up to date.")
+                return
+
+            proceed = self.show_import_preview_dialog(jobs, scanned, skipped_missing_local, missing_from_file)
+            if not proceed:
+                return
+
+            self.meta_is_running = True
+            self.meta_stop_event.clear()
+            self.meta_update_btn.config(state=tk.DISABLED)
+            self.meta_cancel_btn.config(state=tk.NORMAL)
+            self.meta_sync_btn.config(state=tk.DISABLED)
+            self.meta_export_btn.config(state=tk.DISABLED)
+            self.meta_import_btn.config(state=tk.DISABLED)
+            
+            self.meta_prog_bar["value"] = 0
+            self.meta_prog_bar["maximum"] = len(jobs)
+            self.meta_status_label.config(text=f"Starting batch import for {len(jobs)} item(s)...")
+
+            threading.Thread(target=self._import_metadata_worker, args=(jobs,), daemon=True).start()
+
+        except Exception as e:
+            messagebox.showerror("Import Error", f"Failed to process file:\n{str(e)}")
+
+    def show_import_preview_dialog(self, jobs, scanned, skipped_missing_local, missing_from_file):
+        """Displays a modal preview window showing exact metadata changes before applying them."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Preview Batch Import Changes")
+        dialog.geometry("950x500")
+        dialog.minsize(700, 400)
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        proceed_var = tk.BooleanVar(value=False)
+        
+        # 1. Summary Label
+        summary_frame = ttk.Frame(dialog, padding=10)
+        summary_frame.pack(fill=tk.X)
+        
+        ttk.Label(summary_frame, text=f"Scanned {scanned} items. Found {len(jobs)} item(s) with changed metadata.", font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 5))
+        
+        if skipped_missing_local > 0:
+            ttk.Label(summary_frame, text=f"⚠ Ignored {skipped_missing_local} unknown item(s) from the file (ID not found in local archive).", foreground="#d32f2f").pack(anchor=tk.W)
+        if missing_from_file > 0:
+            ttk.Label(summary_frame, text=f"⚠ Ignored {missing_from_file} local item(s) not present in the file.", foreground="#f57c00").pack(anchor=tk.W)
+            
+        # 2. Treeview (Diff table)
+        tree_frame = ttk.Frame(dialog, padding=10)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        
+        cols = ("identifier", "title", "field", "old", "new")
+        tree = ttk.Treeview(tree_frame, columns=cols, show="headings", selectmode="none")
+        tree.heading("identifier", text="Identifier")
+        tree.heading("title", text="Title")
+        tree.heading("field", text="Field")
+        tree.heading("old", text="Old Value")
+        tree.heading("new", text="New Value")
+        
+        tree.column("identifier", width=120, stretch=False)
+        tree.column("title", width=200)
+        tree.column("field", width=70, stretch=False)
+        tree.column("old", width=250)
+        tree.column("new", width=250)
+        
+        scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Populate Tree
+        for job in jobs:
+            ident = job["identifier"]
+            item_data = next((x for x in self.meta_all_items if x["identifier"] == ident), None)
+            title = item_data["title"] if item_data else "Unknown Title"
+            
+            if job["update_tags"]:
+                old_tags = self.metadata_cache.get(ident, {}).get("tags", [])
+                old_str = ", ".join(old_tags) if old_tags else "[None]"
+                new_str = ", ".join(job["new_tags"]) if job["new_tags"] else "[None]"
+                tree.insert("", tk.END, values=(ident, title, "Tags", old_str, new_str))
+                
+            if job["update_lang"]:
+                old_lang = self.metadata_cache.get(ident, {}).get("language", "")
+                old_str = old_lang if old_lang else "[None]"
+                new_str = job["new_lang"] if job["new_lang"] else "[None]"
+                tree.insert("", tk.END, values=(ident, title, "Language", old_str, new_str))
+                
+            if job.get("update_title"):
+                old_title = self.metadata_cache.get(ident, {}).get("title", "")
+                old_str = old_title if old_title else "[None]"
+                new_str = job["new_title"] if job["new_title"] else "[None]"
+                tree.insert("", tk.END, values=(ident, title, "Title", old_str, new_str))
+                
+        # 3. Action Buttons
+        btn_frame = ttk.Frame(dialog, padding=10)
+        btn_frame.pack(fill=tk.X)
+        
+        def on_apply():
+            proceed_var.set(True)
+            dialog.destroy()
+            
+        def on_cancel():
+            proceed_var.set(False)
+            dialog.destroy()
+            
+        dialog.protocol("WM_DELETE_WINDOW", on_cancel)
+        
+        ttk.Button(btn_frame, text="Cancel", command=on_cancel).pack(side=tk.RIGHT, padx=5)
+        apply_btn = ttk.Button(btn_frame, text="Apply Changes to Archive.org", command=on_apply)
+        apply_btn.pack(side=tk.RIGHT, padx=5)
+        
+        dialog.bind('<Return>', lambda e: on_apply())
+        dialog.bind('<Escape>', lambda e: on_cancel())
+        
+        self.root.wait_window(dialog)
+        return proceed_var.get()
+
+    def _import_metadata_worker(self, jobs):
+        """Background worker that calls Archive.org Metadata API with job queue."""
+        total = len(jobs)
+        success_count = 0
+        fail_count = 0
+        
+        for idx, job in enumerate(jobs):
+            if self.meta_stop_event.is_set():
+                break
+                
+            ident = job["identifier"]
+            item_data = next((x for x in self.meta_all_items if x["identifier"] == ident), None)
+            title = item_data["title"] if item_data else ident
+            
+            old_tags = self.metadata_cache.get(ident, {}).get("tags", [])
+            old_lang = self.metadata_cache.get(ident, {}).get("language", "")
+            old_title = self.metadata_cache.get(ident, {}).get("title", "")
+            
+            self.root.after(0, lambda i=idx, t=total, idnt=ident: self._update_meta_ui_progress(i, t, f"Importing ({i+1}/{t}): {idnt}..."))
+            self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "Updating..."))
+            
+            patch_dict = {}
+            if job["update_tags"]:
+                patch_dict["subject"] = job["new_tags"] if job["new_tags"] else "REMOVE_TAG"
+            if job["update_lang"]:
+                patch_dict["language"] = job["new_lang"] if job["new_lang"] else "REMOVE_TAG"
+            if job.get("update_title"):
+                patch_dict["title"] = job["new_title"] if job["new_title"] else "REMOVE_TAG"
+
+            max_meta_retries = 3
+            meta_attempt = 0
+
+            while meta_attempt < max_meta_retries:
+                meta_attempt += 1
+                if self.meta_stop_event.is_set():
+                    break
+                try:
+                    import internetarchive as ia
+                    item = ia.get_item(ident)
+                    resp = item.modify_metadata(patch_dict, priority=-5)
+                    
+                    if resp.status_code == 200:
+                        success_count += 1
+                        if ident in self.metadata_cache:
+                            if job["update_tags"]:
+                                self.metadata_cache[ident]["tags"] = job["new_tags"]
+                            if job["update_lang"]:
+                                self.metadata_cache[ident]["language"] = job["new_lang"]
+                            if job.get("update_title"):
+                                self.metadata_cache[ident]["title"] = job["new_title"]
+                            self.metadata_cache[ident]["last_updated"] = time.strftime("%Y-%m-%d %H:%M:%S")
+                            
+                        if item_data:
+                            if job["update_tags"]:
+                                item_data["tags"] = job["new_tags"]
+                            if job["update_lang"]:
+                                item_data["language"] = job["new_lang"]
+                            if job.get("update_title"):
+                                item_data["title"] = job["new_title"]
+                            item_data["status"] = "✔ Updated"
+                            
+                        self.root.after(0, lambda idnt=ident, ut=job["update_tags"], t=job["new_tags"], ul=job["update_lang"], l=job["new_lang"], uti=job.get("update_title", False), nti=job.get("new_title", ""): self._on_item_meta_success(idnt, ut, t, ul, l, uti, nti))
+                        
+                        now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                        log_details = []
+                        if job["update_tags"]:
+                            log_details.append(f"Tags: {old_tags} -> {job['new_tags']}")
+                        if job["update_lang"]:
+                            log_details.append(f"Lang: '{old_lang}' -> '{job['new_lang']}'")
+                        if job.get("update_title"):
+                            log_details.append(f"Title: '{old_title}' -> '{job['new_title']}'")
+                        with open("metadata_edits.log", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] SUCCESS (IMPORT) | {ident} | {title} | {' | '.join(log_details)}\n")
+                        break
+                    elif resp.status_code in [429, 503]:
+                        backoff_sec = (2 ** meta_attempt) * 5
+                        now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                        with open("metadata_edits.log", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] RATE_LIMIT (IMPORT) ({resp.status_code}) | {ident} | Backing off {backoff_sec}s before retry {meta_attempt}/{max_meta_retries}\n")
+                        
+                        if meta_attempt < max_meta_retries:
+                            self.root.after(0, lambda i=idx, t=total, idnt=ident, s=backoff_sec, code=resp.status_code: 
+                                self._update_meta_ui_progress(i, t, f"Rate limited (HTTP {code}) on {idnt}. Backing off {s}s..."))
+                            self.root.after(0, lambda idnt=ident, s=backoff_sec: self._set_row_status(idnt, f"Backoff ({s}s)..."))
+                            for _ in range(int(backoff_sec * 10)):
+                                if self.meta_stop_event.is_set():
+                                    break
+                                time.sleep(0.1)
+                            continue
+                        else:
+                            fail_count += 1
+                            if item_data:
+                                item_data["status"] = "⚠ Rate Limited"
+                            self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "⚠ Rate Limited"))
+                            with open("metadata_edits.log", "a", encoding="utf-8") as f:
+                                f.write(f"[{now_str}] ERROR (Max Retries) | {ident} | Rate limit persisted after {max_meta_retries} attempts\n")
+                            break
+                    else:
+                        fail_count += 1
+                        err_msg = resp.text[:100]
+                        if item_data:
+                            item_data["status"] = "⚠ Error"
+                        self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "⚠ Error"))
+                        now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                        with open("metadata_edits.log", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] ERROR ({resp.status_code}) | {ident} | {title} | {err_msg}\n")
+                        break
+                except Exception as e:
+                    now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                    with open("metadata_edits.log", "a", encoding="utf-8") as f:
+                        f.write(f"[{now_str}] ERROR | {ident} | Exception: {str(e)}\n")
+                    if meta_attempt == max_meta_retries:
+                        fail_count += 1
+                        self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "⚠ Error"))
+                    else:
+                        time.sleep(2)
+                        
+        was_stopped = self.meta_stop_event.is_set()
+        self.meta_is_running = False
+        self.save_metadata_cache()
+        self.root.after(0, lambda: self._on_bulk_meta_finish(success_count, fail_count, was_stopped))
+
+
     def sort_metadata_table(self, col):
         """Sorts table by column."""
         if self.meta_sort_col == col:
@@ -2570,6 +2896,8 @@ class ArchiveApp:
         self.meta_update_btn.config(state=tk.DISABLED)
         self.meta_cancel_btn.config(state=tk.NORMAL)
         self.meta_sync_btn.config(state=tk.DISABLED)
+        self.meta_export_btn.config(state=tk.DISABLED)
+        self.meta_import_btn.config(state=tk.DISABLED)
         self.meta_prog_bar["value"] = 0
         self.meta_prog_bar["maximum"] = len(selected_idents)
         self.meta_status_label.config(text=f"Starting bulk update for {len(selected_idents)} item(s)...")
@@ -2728,21 +3056,25 @@ class ArchiveApp:
                 cur_vals[6] = status_text
                 self.meta_tree.item(ident, values=cur_vals)
 
-    def _on_item_meta_success(self, ident, update_tags, new_tags, update_lang, new_lang):
+    def _on_item_meta_success(self, ident, update_tags, new_tags, update_lang, new_lang, update_title=False, new_title=""):
         if self.meta_tree.exists(ident):
             cur_vals = list(self.meta_tree.item(ident, "values"))
             if len(cur_vals) >= 7:
+                if update_title:
+                    cur_vals[3] = new_title if new_title else "-"
                 if update_lang:
-                    cur_vals[4] = new_lang if new_lang else "—"
+                    cur_vals[4] = new_lang if new_lang else "-"
                 if update_tags:
-                    cur_vals[5] = ", ".join(new_tags) if new_tags else "—"
-                cur_vals[6] = "✓ Updated"
+                    cur_vals[5] = ", ".join(new_tags) if new_tags else "-"
+                cur_vals[6] = "✔ Updated"
                 self.meta_tree.item(ident, values=cur_vals)
 
     def _on_bulk_meta_finish(self, success_count, fail_count, was_stopped):
         self.meta_update_btn.config(state=tk.NORMAL)
         self.meta_cancel_btn.config(state=tk.DISABLED)
         self.meta_sync_btn.config(state=tk.NORMAL)
+        self.meta_export_btn.config(state=tk.NORMAL)
+        self.meta_import_btn.config(state=tk.NORMAL)
         
         status_msg = f"Completed: {success_count} updated"
         if fail_count > 0:
