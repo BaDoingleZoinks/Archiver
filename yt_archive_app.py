@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.8.0"
+APP_VERSION = "1.8.1"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -273,6 +273,10 @@ class ArchiveApp:
         self.ia_account_btn = ttk.Button(header_bar, text="🔑 IA Account Setup", command=self.open_ia_credentials_dialog)
         self.ia_account_btn.pack(side=tk.RIGHT, padx=(0, 6))
 
+        self.dark_mode_var = tk.BooleanVar(value=False)
+        self.dark_mode_chk = ttk.Checkbutton(header_bar, text="🌙 Dark Mode", variable=self.dark_mode_var, style="Switch.TCheckbutton", command=self.toggle_dark_mode)
+        self.dark_mode_chk.pack(side=tk.RIGHT, padx=(0, 6))
+
         self.main_notebook = ttk.Notebook(self.root)
         self.main_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
@@ -406,15 +410,10 @@ class ArchiveApp:
         self.prevent_sleep_chk = ttk.Checkbutton(input_frame, text="Prevent PC from sleeping while archiving", variable=self.prevent_sleep_var)
         self.prevent_sleep_chk.grid(row=9, column=1, sticky=tk.W, padx=5, pady=5)
         
-        # Dark Mode Checkbox
-        self.dark_mode_var = tk.BooleanVar(value=False)
-        self.dark_mode_chk = ttk.Checkbutton(input_frame, text="Enable Dark Mode", variable=self.dark_mode_var, command=self.toggle_dark_mode)
-        self.dark_mode_chk.grid(row=10, column=1, sticky=tk.W, padx=5, pady=5)
-        
         # Reverse Playlist Checkbox
         self.reverse_playlist_var = tk.BooleanVar(value=False)
         self.reverse_playlist_chk = ttk.Checkbutton(input_frame, text="Download Oldest First (Reverse Playlist)", variable=self.reverse_playlist_var)
-        self.reverse_playlist_chk.grid(row=11, column=1, sticky=tk.W, padx=5, pady=5)
+        self.reverse_playlist_chk.grid(row=10, column=1, sticky=tk.W, padx=5, pady=5)
         
         input_frame.columnconfigure(1, weight=1)
         

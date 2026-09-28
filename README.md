@@ -22,7 +22,7 @@ A vibecoded, Python-based desktop application for backing up YouTube videos and 
 ### Launching
 - Double-click `start_app.bat` to launch the app.
 - On any synced machine, double-click `update_and_run.bat` to pull the latest changes from GitHub before launching.
-  - Or start app and click `Check for Updates/Sync`
+  - Or start app and click `Check for Updates/Sync`.
 - On first launch, enter your Internet Archive S3 credentials when prompted to enable uploading.
    - Click the Keys button on the top right of the window to access your login at any time.
 
@@ -121,7 +121,7 @@ Bulk metadata editing:
   - Tip: if you double click the tags of an existing row on the list, it will populate those tags into the tags field!
 - Click on Update Metadata for Selected Items on the bottom to bulk apply the tags to the selected items.
   - Note: though the tags refresh immediately in the app, sometimes it takes some time for the tags to apply on Archive.org. If you immediately refresh the tab with the Sync With Account button, or immediately check your Archive, you might not see the changes take effect until a while has passed.
-- WARNING: the tool does not deselect items automatically! Make sure you click on Deselect All to avoid giving all your items the same tag!
+- **WARNING**: the tool does not deselect items automatically! Make sure you click on Deselect All to avoid giving all your items the same tag!
   - Likewise, mind the difference between Select Filtered and Select All.
 - Click Sync With Account to sync the list across devices.
 - You can also change the language of the files you've uploaded as a batch.

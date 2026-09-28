@@ -2,7 +2,11 @@
 
 All notable changes to **The Archiver**, extracted directly from the official GitHub repository (`BaDoingleZoinks/Archiver`) commit history.
 
-## [1.8.0] - Latest
+## [1.8.1] - Latest
+### Changed
+- Relocated Dark Mode toggle to top bar tomake it visible regardless of tab.
+
+## [1.8.0]
 ### Added
 - **Add**: Batch Metadata Import with Preview window and Title editing
 
