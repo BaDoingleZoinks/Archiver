@@ -78,9 +78,6 @@ The first tab of the app to be developed. A walkthrough of each field:
 - Prevent PC from sleeping while archiving
   - Useful if you want to leave the PC on to archive content while you're away.
 
-- Enable Dark Mode
-  - To prevent you from flash banging yourself at night!  
-
 - Download oldest first (reverse playlist)
   - Will archive content starting from the oldest, instead of the newest
  
@@ -90,6 +87,9 @@ The first tab of the app to be developed. A walkthrough of each field:
 - Open settings
   - Will open the Settings.json file on your default app
   - This is where your tag presets and other settings are saved. 
+  
+On the top bar you can toggle Dark Mode to not flashbang yourself in the dark.   
+  
 
  Click on Start Archiving and you will see the activity log populate. The tool will scan the channel or playlist, download a video, parse its metadata, and upload it with your selected tags to your Internet Archive. It will then download the next video, wait for the configured delay, and upload it. The tool skips any video previously recorded on your selected ledger file to avoid duplicate uploads. 
  On the right you will see the Time Since Last Upload. The timer is synced to your account, so you can turn on the tool on another device and not get rate limited; the tool will wait the correct time. 

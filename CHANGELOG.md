@@ -2,7 +2,11 @@
 
 All notable changes to **The Archiver**, extracted directly from the official GitHub repository (`BaDoingleZoinks/Archiver`) commit history.
 
-## [1.8.1] - Latest
+## [1.8.2] - Latest
+### Added
+- **Added**: creator column to metadata editor table
+
+## [1.8.1]
 ### Changed
 - Relocated Dark Mode toggle to top bar tomake it visible regardless of tab.
 

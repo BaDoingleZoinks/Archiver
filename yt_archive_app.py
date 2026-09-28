@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.8.1"
+APP_VERSION = "1.8.2"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -1914,7 +1914,7 @@ class ArchiveApp:
         style = ttk.Style()
         style.configure("Meta.Treeview", rowheight=26)
         
-        columns = ("sel", "date", "id", "title", "lang", "tags", "status")
+        columns = ("sel", "date", "id", "title", "lang", "tags", "status", "creator")
         self.meta_tree = ttk.Treeview(tree_frame, columns=columns, show="headings", selectmode="extended", style="Meta.Treeview")
         
         self.meta_tree.heading("sel", text="[✓]", command=self.toggle_all_filtered)
@@ -1924,6 +1924,7 @@ class ArchiveApp:
         self.meta_tree.heading("lang", text="Lang", command=lambda: self.sort_metadata_table("lang"))
         self.meta_tree.heading("tags", text="Current Subject Tags", command=lambda: self.sort_metadata_table("tags"))
         self.meta_tree.heading("status", text="Status", command=lambda: self.sort_metadata_table("status"))
+        self.meta_tree.heading("creator", text="Creator", command=lambda: self.sort_metadata_table("creator"))
         
         self.meta_tree.column("sel", width=42, anchor="center", stretch=False)
         self.meta_tree.column("date", width=130, anchor="center", stretch=False)
@@ -1932,6 +1933,7 @@ class ArchiveApp:
         self.meta_tree.column("lang", width=65, anchor="center", stretch=False)
         self.meta_tree.column("tags", width=250, anchor="w", stretch=True)
         self.meta_tree.column("status", width=95, anchor="center", stretch=False)
+        self.meta_tree.column("creator", width=150, anchor="w", stretch=True)
         
         tree_vscroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.meta_tree.yview)
         tree_hscroll = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.meta_tree.xview)
@@ -2122,7 +2124,7 @@ class ArchiveApp:
                 "",
                 tk.END,
                 iid=ident,
-                values=(sel_char, item.get("date", ""), disp_id, item["title"], lang_str, tags_str, item["status"])
+                values=(sel_char, item.get("date", ""), disp_id, item["title"], lang_str, tags_str, item["status"], item.get("creator", ""))
             )
             
         self.update_selection_count_label()
