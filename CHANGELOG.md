@@ -2,7 +2,11 @@
 
 All notable changes to **The Archiver**, extracted directly from the official GitHub repository (`BaDoingleZoinks/Archiver`) commit history.
 
-## [1.6.2] - Latest
+## [1.8.2] - Latest
+### Added
+- Added RapidArchive mode to speed up archival through deferred derivation. Added manual and automatic derivation (initial implementation). Increased wikipedia URL fetching. Miscellaneous improvements.
+
+## [1.6.2]
 ### Added
 - **Data Export**: Added the ability to export a table (CSV, TXT, JSON) with all archived videos and their tags for external analysis.
 

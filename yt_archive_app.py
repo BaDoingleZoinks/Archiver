@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "1.7.0"
+APP_VERSION = "1.8.2"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -117,6 +117,12 @@ class ArchiveApp:
                 self.keep_files_var.set(s.get("keep_files", False))
                 self.prevent_sleep_var.set(s.get("prevent_sleep", True))
                 self.delay_var.set(s.get("delay", 20))
+                self.rapid_delay_var.set(s.get("rapid_delay", 5))
+                self.rapid_mode_var.set(s.get("rapid_mode", False))
+                self.auto_derive_var.set(s.get("auto_derive", False))
+                self.auto_derive_interval_var.set(s.get("auto_derive_interval", 15))
+                if self.auto_derive_var.get():
+                    self.toggle_auto_derive_engine()
                 self.dark_mode_var.set(s.get("dark_mode", False))
                 self.reverse_playlist_var.set(s.get("reverse_playlist", False))
                 if hasattr(self, 'spn_screenshot_var'):
@@ -146,6 +152,10 @@ class ArchiveApp:
             "keep_files": self.keep_files_var.get(),
             "prevent_sleep": self.prevent_sleep_var.get(),
             "delay": self.delay_var.get(),
+            "rapid_delay": self.rapid_delay_var.get(),
+            "rapid_mode": self.rapid_mode_var.get(),
+            "auto_derive": self.auto_derive_var.get(),
+            "auto_derive_interval": self.auto_derive_interval_var.get(),
             "dark_mode": self.dark_mode_var.get(),
             "reverse_playlist": self.reverse_playlist_var.get()
         }
@@ -273,6 +283,10 @@ class ArchiveApp:
         self.ia_account_btn = ttk.Button(header_bar, text="🔑 IA Account Setup", command=self.open_ia_credentials_dialog)
         self.ia_account_btn.pack(side=tk.RIGHT, padx=(0, 6))
 
+        self.dark_mode_var = tk.BooleanVar(value=False)
+        self.dark_mode_chk = ttk.Checkbutton(header_bar, text="🌙 Dark Mode", variable=self.dark_mode_var, style="Switch.TCheckbutton", command=self.toggle_dark_mode)
+        self.dark_mode_chk.pack(side=tk.RIGHT, padx=(0, 6))
+
         self.main_notebook = ttk.Notebook(self.root)
         self.main_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
@@ -352,11 +366,20 @@ class ArchiveApp:
         self.cookies_browse_btn = ttk.Button(cookies_frame, text="Browse...", command=self.browse_cookies_file)
         self.cookies_browse_btn.pack(side=tk.LEFT, padx=(5, 0))
 
-        # Upload Delay
-        ttk.Label(input_frame, text="Upload Delay (minutes):").grid(row=5, column=0, sticky=tk.W, pady=5)
+        # Upload Delays Frame
+        ttk.Label(input_frame, text="Rate Limit Delays:").grid(row=5, column=0, sticky=tk.W, pady=5)
+        delays_frame = ttk.Frame(input_frame)
+        delays_frame.grid(row=5, column=1, sticky=tk.EW, padx=5, pady=5)
+        
+        ttk.Label(delays_frame, text="Normal Mode (min):").pack(side=tk.LEFT, padx=(0, 5))
         self.delay_var = tk.IntVar(value=20)
-        self.delay_spin = ttk.Spinbox(input_frame, from_=1, to=1440, textvariable=self.delay_var, width=10)
-        self.delay_spin.grid(row=5, column=1, sticky=tk.W, padx=5, pady=5)
+        self.delay_spin = ttk.Spinbox(delays_frame, from_=1, to=1440, textvariable=self.delay_var, width=6)
+        self.delay_spin.pack(side=tk.LEFT, padx=(0, 15))
+
+        ttk.Label(delays_frame, text="Rapid Mode (min):").pack(side=tk.LEFT, padx=(0, 5))
+        self.rapid_delay_var = tk.IntVar(value=5)
+        self.rapid_delay_spin = ttk.Spinbox(delays_frame, from_=1, to=1440, textvariable=self.rapid_delay_var, width=6)
+        self.rapid_delay_spin.pack(side=tk.LEFT)
         
         # Download Directory
         ttk.Label(input_frame, text="Download Directory:").grid(row=6, column=0, sticky=tk.W, pady=5)
@@ -397,24 +420,27 @@ class ArchiveApp:
         self.ledger_path_lbl = ttk.Label(ledger_frame, text=f"File: {self.get_ledger_path()}", font=("Segoe UI", 8), foreground="gray")
         self.ledger_path_lbl.pack(anchor=tk.W, pady=(2, 0))
 
+        # Checkboxes Frame
+        opts_frame = ttk.Frame(input_frame)
+        opts_frame.grid(row=8, column=1, sticky=tk.EW, padx=5, pady=5)
+
+        self.rapid_mode_var = tk.BooleanVar(value=False)
+        self.rapid_mode_chk = ttk.Checkbutton(opts_frame, text="Rapid Upload Mode (Skip IA derivation; remember to queue with Metadata Editor)", variable=self.rapid_mode_var)
+        self.rapid_mode_chk.pack(side=tk.TOP, anchor=tk.W, pady=2)
+
         self.keep_files_var = tk.BooleanVar(value=False)
-        self.keep_files_chk = ttk.Checkbutton(input_frame, text="Keep video files locally after successful upload", variable=self.keep_files_var)
-        self.keep_files_chk.grid(row=8, column=1, sticky=tk.W, padx=5, pady=5)
+        self.keep_files_chk = ttk.Checkbutton(opts_frame, text="Keep video files locally after successful upload", variable=self.keep_files_var)
+        self.keep_files_chk.pack(side=tk.TOP, anchor=tk.W, pady=2)
         
         # Prevent Sleep Checkbox
         self.prevent_sleep_var = tk.BooleanVar(value=True)
-        self.prevent_sleep_chk = ttk.Checkbutton(input_frame, text="Prevent PC from sleeping while archiving", variable=self.prevent_sleep_var)
-        self.prevent_sleep_chk.grid(row=9, column=1, sticky=tk.W, padx=5, pady=5)
-        
-        # Dark Mode Checkbox
-        self.dark_mode_var = tk.BooleanVar(value=False)
-        self.dark_mode_chk = ttk.Checkbutton(input_frame, text="Enable Dark Mode", variable=self.dark_mode_var, command=self.toggle_dark_mode)
-        self.dark_mode_chk.grid(row=10, column=1, sticky=tk.W, padx=5, pady=5)
+        self.prevent_sleep_chk = ttk.Checkbutton(opts_frame, text="Prevent PC from sleeping while archiving", variable=self.prevent_sleep_var)
+        self.prevent_sleep_chk.pack(side=tk.TOP, anchor=tk.W, pady=2)
         
         # Reverse Playlist Checkbox
         self.reverse_playlist_var = tk.BooleanVar(value=False)
-        self.reverse_playlist_chk = ttk.Checkbutton(input_frame, text="Download Oldest First (Reverse Playlist)", variable=self.reverse_playlist_var)
-        self.reverse_playlist_chk.grid(row=11, column=1, sticky=tk.W, padx=5, pady=5)
+        self.reverse_playlist_chk = ttk.Checkbutton(opts_frame, text="Download Oldest First (Reverse Playlist)", variable=self.reverse_playlist_var)
+        self.reverse_playlist_chk.pack(side=tk.TOP, anchor=tk.W, pady=2)
         
         input_frame.columnconfigure(1, weight=1)
         
@@ -436,6 +462,9 @@ class ArchiveApp:
         
         self.open_settings_btn = ttk.Button(btn_frame, text="Open Settings", command=self.open_settings_file)
         self.open_settings_btn.pack(side=tk.LEFT, padx=5)
+        
+        self.progress_label = ttk.Label(btn_frame, text="-/- for channel/playlist", font=("TkDefaultFont", 9, "bold"))
+        self.progress_label.pack(side=tk.LEFT, padx=15)
         
         self.elapsed_label = ttk.Label(btn_frame, text="Time since last upload: Calculating...", font=("TkDefaultFont", 9, "bold"), cursor="hand2")
         self.elapsed_label.pack(side=tk.RIGHT, padx=10)
@@ -613,13 +642,13 @@ class ArchiveApp:
                             continue
                         parts = clean.split(" | ")
                         if len(parts) >= 5:
-                            self.history_area.insert(tk.END, f"{parts[0]} | {parts[2]} | {parts[3]} | [Ledger: {parts[4]}]\n")
+                            self.history_area.insert(tk.END, f"{parts[0]} | {parts[2]} | {parts[3]} | [Ledger: {parts[4]}]\n\n")
                         elif len(parts) >= 4:
-                            self.history_area.insert(tk.END, f"{parts[0]} | {parts[2]} | {parts[3]}\n")
+                            self.history_area.insert(tk.END, f"{parts[0]} | {parts[2]} | {parts[3]}\n\n")
                         else:
-                            self.history_area.insert(tk.END, clean + "\n")
+                            self.history_area.insert(tk.END, clean + "\n\n")
             except Exception as e:
-                self.history_area.insert(tk.END, f"Error reading history: {e}\n")
+                self.history_area.insert(tk.END, f"Error reading history: {e}\n\n")
         else:
             self.history_area.insert(tk.END, "No archives recorded yet.")
         self.history_area.see(tk.END)
@@ -762,7 +791,7 @@ class ArchiveApp:
                 with open("archive_history.log", "w", encoding="utf-8") as f:
                     for entry in sorted_entries:
                         ledger_str = entry["ledger"] if entry["ledger"] else "Main Archive"
-                        f.write(f"[{entry['date_str']}] | {entry['ts']} | {entry['vid']} | {entry['title']} | {ledger_str}\n")
+                        f.write(f"[{entry['date_str']}] | {entry['ts']} | {entry['vid']} | {entry['title']} | {ledger_str}\n\n")
 
                 if sorted_entries:
                     newest_ts = sorted_entries[-1]["ts"]
@@ -825,7 +854,8 @@ class ArchiveApp:
         base_dir = self.dir_var.get().strip()
         keep_files = self.keep_files_var.get()
         prevent_sleep = self.prevent_sleep_var.get()
-        delay_minutes = self.delay_var.get()
+        rapid_mode = self.rapid_mode_var.get()
+        delay_minutes = self.rapid_delay_var.get() if rapid_mode else self.delay_var.get()
         reverse_playlist = self.reverse_playlist_var.get()
 
         # Pin the active ledger for this run
@@ -840,11 +870,12 @@ class ArchiveApp:
             if match:
                 lang_code = match.group(1)
         
-        self.log(f"=== Archival Pipeline Started (Max Resolution: {selected_res}) ===")
+        mode_str = "RAPID" if rapid_mode else "NORMAL"
+        self.log(f"=== Archival Pipeline Started [{mode_str} MODE] (Max Resolution: {selected_res}) ===")
         self.log(f"Active Ledger: '{active_ledger_name}' ({os.path.basename(active_ledger_path)})")
         self.worker_thread = threading.Thread(
             target=self.run_pipeline, 
-            args=(url, self.tags_combo.get().strip(), selected_res, base_dir, keep_files, prevent_sleep, delay_minutes, lang_code, reverse_playlist, active_ledger_path, active_ledger_name), 
+            args=(url, self.tags_combo.get().strip(), selected_res, base_dir, keep_files, prevent_sleep, delay_minutes, lang_code, reverse_playlist, active_ledger_path, active_ledger_name, rapid_mode), 
             daemon=True
         )
         self.worker_thread.start()
@@ -864,6 +895,8 @@ class ArchiveApp:
                 
         self.stop_btn.config(state=tk.DISABLED)
         self.pause_btn.config(state=tk.DISABLED)
+        if hasattr(self, 'progress_label'):
+            self.progress_label.config(text="-/- for channel/playlist")
         
     def open_settings_file(self):
         try:
@@ -1016,7 +1049,7 @@ class ArchiveApp:
             try:
                 if not os.path.exists(filename):
                     with open(filename, "w", encoding="utf-8") as f:
-                        f.write(f"# Archive Ledger: {friendly_name}\n# Created {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                        f.write(f"# Archive Ledger: {friendly_name}\n# Created {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n\n")
                 self.ledger_presets[friendly_name] = filename
                 self.ledger_name_var.set(friendly_name)
                 self.ledger_file_var.set(filename)
@@ -1044,7 +1077,7 @@ class ArchiveApp:
             if ans:
                 try:
                     with open(path, "w", encoding="utf-8") as f:
-                        f.write(f"# Archive Ledger: {name}\n# Created {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                        f.write(f"# Archive Ledger: {name}\n# Created {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n\n")
                     os.startfile(path)
                 except Exception as e:
                     messagebox.showerror("Error", f"Could not create ledger file: {e}")
@@ -1142,7 +1175,7 @@ class ArchiveApp:
         remote_time = getattr(self, '_cached_remote_upload_time', 0)
         return max(log_time, artificial_time, remote_time)
 
-    def record_successful_upload(self, video_id, title, tags_str=None, lang_code=None, ledger_name="Main Archive", creator=""):
+    def record_successful_upload(self, video_id, title, tags_str=None, lang_code=None, ledger_name="Main Archive", creator="", rapid_mode=False):
         """Records a successful upload to the human-readable history log."""
         try:
             now = time.time()
@@ -1151,7 +1184,7 @@ class ArchiveApp:
             date_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now))
             ledger_label = ledger_name.strip() if ledger_name else "Main Archive"
             with open("archive_history.log", "a", encoding="utf-8") as f:
-                f.write(f"[{date_str}] | {now} | {video_id} | {title} | {ledger_label}\n")
+                f.write(f"[{date_str}] | {now} | {video_id} | {title} | {ledger_label}\n\n")
             self.log(f"[History] Recorded successful upload to archive_history.log (Ledger: {ledger_label})")
             
             # Automatically update local metadata cache
@@ -1168,6 +1201,7 @@ class ArchiveApp:
                 "source": "app",
                 "ledger": ledger_label,
                 "creator": creator,
+                "derivation_state": "needs_derivation" if rapid_mode else "derived",
                 "last_updated": date_str
             }
             self.save_metadata_cache()
@@ -1204,7 +1238,7 @@ class ArchiveApp:
                 time.sleep(0.5)
         return not self.stop_event.is_set()
         
-    def run_pipeline(self, url, tags_str, max_resolution, base_dir, keep_files, prevent_sleep, delay_minutes, lang_code, reverse_playlist, active_ledger_path=None, active_ledger_name="Main Archive"):
+    def run_pipeline(self, url, tags_str, max_resolution, base_dir, keep_files, prevent_sleep, delay_minutes, lang_code, reverse_playlist, active_ledger_path=None, active_ledger_name="Main Archive", rapid_mode=False):
         try:
             if not active_ledger_path:
                 active_ledger_path = self.get_ledger_path()
@@ -1301,13 +1335,20 @@ class ArchiveApp:
                         line_clean = line.strip()
                         self.log(f"[yt-dlp] {line_clean}")
                         
+                        # Extract progress from yt-dlp output
+                        progress_match = re.search(r"Downloading (?:video|item) (\d+) of (\d+)", line_clean, re.IGNORECASE)
+                        if progress_match:
+                            current, total = progress_match.groups()
+                            if hasattr(self, 'progress_label'):
+                                self.root.after(0, lambda c=current, t=total: self.progress_label.config(text=f"{c}/{t} for channel/playlist"))
+                        
                         line_lower = line_clean.lower()
                         if "could not copy" in line_lower and "cookie database" in line_lower:
                             self.log("\n[DIAGNOSTIC] Browser cookie database is locked because the browser is currently running.")
-                            self.log("[DIAGNOSTIC] Fix: Close the browser completely, switch to 'firefox', or select an exported cookies.txt file using 'Browse...'.\n")
+                            self.log("[DIAGNOSTIC] Fix: Close the browser completely, switch to 'firefox', or select an exported cookies.txt file using 'Browse...'.\n\n")
                         elif "failed to decrypt with dpapi" in line_lower:
                             self.log("\n[DIAGNOSTIC] Chrome App-Bound Encryption blocked cookie decryption (Chrome 127+ on Windows).")
-                            self.log("[DIAGNOSTIC] Fix: Switch to 'firefox', or export cookies with an extension and select the cookies.txt file using 'Browse...'.\n")
+                            self.log("[DIAGNOSTIC] Fix: Switch to 'firefox', or export cookies with an extension and select the cookies.txt file using 'Browse...'.\n\n")
                             
                         if self.stop_event.is_set():
                             process.terminate()
@@ -1383,7 +1424,7 @@ class ArchiveApp:
                     try:
                         with open(active_ledger_path, "a", encoding="utf-8") as f:
                             archival_time = time.strftime('%Y-%m-%d %H:%M:%S')
-                            f.write(f"# {title} (Account-consolidated: {archival_time})\nyoutube {video_id}\n\n")
+                            f.write(f"# {title} (Account-consolidated: {archival_time})\nyoutube {video_id}\n\n\n")
                     except Exception as e:
                         self.log(f"Warning: Could not update ledger: {e}")
                     self.record_successful_upload(video_id, title, tags_str, lang_code, active_ledger_name, uploader)
@@ -1441,7 +1482,6 @@ class ArchiveApp:
                         "-m", f"date:{upload_date}",
                         "-m", "collection:opensource_movies",
                         "-m", "mediatype:movies",
-                        "-m", f"ledger:{active_ledger_name}",
                         "--retries", "3"
                     ]
                     
@@ -1454,6 +1494,9 @@ class ArchiveApp:
                     # Process language
                     if lang_code:
                         ia_cmd.extend(["-m", f"language:{lang_code}"])
+                        
+                    if rapid_mode:
+                        ia_cmd.append("--no-derive")
                                 
                     try:
                         ia_process = subprocess.Popen(
@@ -1492,11 +1535,11 @@ class ArchiveApp:
                             try:
                                 with open(active_ledger_path, "a", encoding="utf-8") as f:
                                     archival_time = time.strftime('%Y-%m-%d %H:%M:%S')
-                                    f.write(f"# {title} (Archived: {archival_time})\nyoutube {video_id}\n\n")
+                                    f.write(f"# {title} (Archived: {archival_time})\nyoutube {video_id}\n\n\n")
                             except Exception as e:
                                 self.log(f"Warning: Could not update ledger: {e}")
                             
-                            self.record_successful_upload(video_id, title, tags_str, lang_code, active_ledger_name, uploader)
+                            self.record_successful_upload(video_id, title, tags_str, lang_code, active_ledger_name, uploader, rapid_mode)
                             break
                         else:
                             self.log(f"\n[ERROR] ia upload failed with exit code {ia_process.returncode}.")
@@ -1549,6 +1592,8 @@ class ArchiveApp:
             self.root.after(0, lambda: self.start_btn.config(state=tk.NORMAL))
             self.root.after(0, lambda: self.pause_btn.config(text="Pause", state=tk.DISABLED))
             self.root.after(0, lambda: self.stop_btn.config(state=tk.DISABLED))
+            if hasattr(self, 'progress_label'):
+                self.root.after(0, lambda: self.progress_label.config(text="-/- for channel/playlist"))
             self.root.after(0, lambda: self.ledger_combo.config(state="readonly"))
             self.root.after(0, lambda: self.rename_ledger_btn.config(state=tk.NORMAL))
             self.root.after(0, lambda: self.delete_ledger_btn.config(state=tk.NORMAL))
@@ -1660,12 +1705,14 @@ class ArchiveApp:
         pill_frame.columnconfigure(0, weight=1)
 
     def _fetch_availability_thread(self, links):
+        import concurrent.futures
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
         }
-        for url in links:
+        
+        def process_link(url):
             if self.stop_event.is_set():
-                break
+                return
                 
             # Live web check
             is_dead = False
@@ -1680,29 +1727,50 @@ class ArchiveApp:
             if is_dead:
                 self.root.after(0, self._mark_url_dead, url)
                 
-            # Wayback Machine check
-            try:
-                avail_url = f"https://archive.org/wayback/available?url={url}"
-                resp = requests.get(avail_url, headers=headers, timeout=10)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    snapshots = data.get("archived_snapshots", {})
-                    closest = snapshots.get("closest")
-                    if closest and closest.get("available"):
-                        ts = closest.get("timestamp", "")
-                        if len(ts) >= 8:
-                            formatted_date = f"{ts[:4]}-{ts[4:6]}-{ts[6:8]}"
-                            self.root.after(0, self._update_avail_label, url, f"Last archived: {formatted_date}", "green")
+            # Wayback Machine check with retry for 429
+            max_retries = 3
+            for attempt in range(max_retries):
+                if self.stop_event.is_set():
+                    return
+                try:
+                    avail_url = f"https://archive.org/wayback/available?url={url}"
+                    resp = requests.get(avail_url, headers=headers, timeout=10)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        snapshots = data.get("archived_snapshots", {})
+                        closest = snapshots.get("closest")
+                        if closest and closest.get("available"):
+                            ts = closest.get("timestamp", "")
+                            if len(ts) >= 8:
+                                formatted_date = f"{ts[:4]}-{ts[4:6]}-{ts[6:8]}"
+                                self.root.after(0, self._update_avail_label, url, f"Last archived: {formatted_date}", "green")
+                            else:
+                                self.root.after(0, self._update_avail_label, url, "Archived (Date Unknown)", "green")
                         else:
-                            self.root.after(0, self._update_avail_label, url, "Archived (Date Unknown)", "green")
+                            self.root.after(0, self._update_avail_label, url, "Not found in archive", "red")
+                        break # Success, exit retry loop
+                    elif resp.status_code == 429:
+                        if attempt < max_retries - 1:
+                            time.sleep(2 ** attempt) # Exponential backoff: 1s, 2s
+                            continue
+                        else:
+                            self.root.after(0, self._update_avail_label, url, "Rate limited by archive.org (HTTP 429)", "orange")
+                            break
                     else:
-                        self.root.after(0, self._update_avail_label, url, "Not found in archive", "red")
-                else:
-                    self.root.after(0, self._update_avail_label, url, f"Availability check failed (HTTP {resp.status_code})", "orange")
-            except Exception as e:
-                self.root.after(0, self._update_avail_label, url, f"Check error: {str(e)[:40]}", "orange")
-                
-            time.sleep(0.5) # Prevent aggressive spamming of availability API
+                        self.root.after(0, self._update_avail_label, url, f"Availability check failed (HTTP {resp.status_code})", "orange")
+                        break
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        time.sleep(2 ** attempt)
+                        continue
+                    self.root.after(0, self._update_avail_label, url, f"Check error: {str(e)[:40]}", "orange")
+                    break
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            for url in links:
+                if self.stop_event.is_set():
+                    break
+                executor.submit(process_link, url)
             
         self.root.after(0, lambda: self.tab2_status_var.set("Availability check complete."))
 
@@ -1900,9 +1968,15 @@ class ArchiveApp:
         
         self.meta_sel_count_label = ttk.Label(sel_row, text="Selected: 0 / 0", font=("TkDefaultFont", 9, "bold"))
         self.meta_sel_count_label.pack(side=tk.LEFT, padx=5)
+
+        self.meta_deriv_count_label = ttk.Label(sel_row, text=" | Awaiting Derivation: 0", font=("TkDefaultFont", 9, "bold"), foreground="#f57c00")
+        self.meta_deriv_count_label.pack(side=tk.LEFT, padx=(0, 5))
         
         self.meta_export_btn = ttk.Button(sel_row, text="Export Table", command=self.export_metadata_table)
         self.meta_export_btn.pack(side=tk.RIGHT, padx=5)
+        
+        self.meta_import_btn = ttk.Button(sel_row, text="Import Table (Batch)", command=self.import_metadata_table)
+        self.meta_import_btn.pack(side=tk.RIGHT, padx=5)
 
         # 2. Center Table (Treeview)
         tree_frame = ttk.Frame(self.tab3_frame)
@@ -1912,7 +1986,7 @@ class ArchiveApp:
         style = ttk.Style()
         style.configure("Meta.Treeview", rowheight=26)
         
-        columns = ("sel", "date", "id", "title", "lang", "tags", "status")
+        columns = ("sel", "date", "id", "title", "lang", "tags", "status", "creator")
         self.meta_tree = ttk.Treeview(tree_frame, columns=columns, show="headings", selectmode="extended", style="Meta.Treeview")
         
         self.meta_tree.heading("sel", text="[✓]", command=self.toggle_all_filtered)
@@ -1922,6 +1996,7 @@ class ArchiveApp:
         self.meta_tree.heading("lang", text="Lang", command=lambda: self.sort_metadata_table("lang"))
         self.meta_tree.heading("tags", text="Current Subject Tags", command=lambda: self.sort_metadata_table("tags"))
         self.meta_tree.heading("status", text="Status", command=lambda: self.sort_metadata_table("status"))
+        self.meta_tree.heading("creator", text="Creator", command=lambda: self.sort_metadata_table("creator"))
         
         self.meta_tree.column("sel", width=42, anchor="center", stretch=False)
         self.meta_tree.column("date", width=130, anchor="center", stretch=False)
@@ -1930,6 +2005,7 @@ class ArchiveApp:
         self.meta_tree.column("lang", width=65, anchor="center", stretch=False)
         self.meta_tree.column("tags", width=250, anchor="w", stretch=True)
         self.meta_tree.column("status", width=95, anchor="center", stretch=False)
+        self.meta_tree.column("creator", width=150, anchor="w", stretch=True)
         
         tree_vscroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.meta_tree.yview)
         tree_hscroll = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.meta_tree.xview)
@@ -1986,6 +2062,30 @@ class ArchiveApp:
         
         ttk.Label(lang_input_row, text="(Tip: Check the boxes for the fields you want to update)", font=("TkDefaultFont", 8, "italic")).pack(side=tk.LEFT)
         
+        # Auto-Derivation Engine Row
+        engine_row = ttk.Frame(bottom_frame)
+        engine_row.pack(fill=tk.X, pady=(6, 0))
+        
+        self.auto_derive_var = tk.BooleanVar(value=False)
+        self.auto_derive_chk = ttk.Checkbutton(
+            engine_row, 
+            text="Enable Auto-Derivation Engine", 
+            variable=self.auto_derive_var,
+            command=self.toggle_auto_derive_engine
+        )
+        self.auto_derive_chk.pack(side=tk.LEFT, padx=(0, 10))
+        
+        ttk.Label(engine_row, text="Sweep Every (min):").pack(side=tk.LEFT, padx=(0, 5))
+        self.auto_derive_interval_var = tk.IntVar(value=15)
+        self.auto_derive_spin = ttk.Spinbox(engine_row, from_=1, to=1440, textvariable=self.auto_derive_interval_var, width=5)
+        self.auto_derive_spin.pack(side=tk.LEFT)
+        
+        self.engine_status_lbl = ttk.Label(engine_row, text="Engine Stopped", foreground="gray", font=("TkDefaultFont", 8, "italic"))
+        self.engine_status_lbl.pack(side=tk.RIGHT, padx=5)
+        
+        self.auto_derive_thread = None
+        self.auto_derive_stop_event = threading.Event()
+
         # Action row
         action_row = ttk.Frame(bottom_frame)
         action_row.pack(fill=tk.X, pady=(0, 4))
@@ -2004,13 +2104,28 @@ class ArchiveApp:
             state=tk.DISABLED
         )
         self.meta_cancel_btn.pack(side=tk.LEFT, padx=(0, 10))
+
+        self.meta_derive_btn = ttk.Button(
+            action_row,
+            text="Queue Derivation for Selected",
+            command=self.start_bulk_derivation
+        )
+        self.meta_derive_btn.pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.meta_open_log_btn = ttk.Button(
+            action_row,
+            text="Open Log",
+            command=self.open_metadata_log
+        )
+        self.meta_open_log_btn.pack(side=tk.LEFT, padx=(0, 10))
         
         self.meta_status_label = ttk.Label(action_row, text="Ready. Double-click a row to load its metadata.", font=("TkDefaultFont", 8, "italic"))
         self.meta_status_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
         
         # Progress bar
         self.meta_prog_bar = ttk.Progressbar(bottom_frame, orient="horizontal", mode="determinate")
-        self.meta_prog_bar.pack(fill=tk.X, pady=(2, 0))
+        self.meta_prog_bar.pack(fill=tk.X, pady=(2, 4))
+        
         
         # Populate table
         self.load_items_from_history()
@@ -2057,6 +2172,18 @@ class ArchiveApp:
                 source = "app" if ident.lower().startswith("yt-archive-") else "legacy"
                 
             status = "Ready" if source == "app" else "Legacy"
+            
+            # Backwards compatibility and new state handling
+            d_state = cached.get("derivation_state")
+            if not d_state and cached.get("derivation_pending"):
+                d_state = "needs_derivation"
+                
+            if d_state == "needs_derivation":
+                status = "⚠ Needs Derivation"
+            elif d_state == "queued":
+                status = "⏳ Deriv Queued"
+            elif d_state == "error":
+                status = "✗ Error (Deriv)"
             
             lang = cached.get("language", "")
             if isinstance(lang, list):
@@ -2120,7 +2247,7 @@ class ArchiveApp:
                 "",
                 tk.END,
                 iid=ident,
-                values=(sel_char, item.get("date", ""), disp_id, item["title"], lang_str, tags_str, item["status"])
+                values=(sel_char, item.get("date", ""), disp_id, item["title"], lang_str, tags_str, item["status"], item.get("creator", ""))
             )
             
         self.update_selection_count_label()
@@ -2134,6 +2261,12 @@ class ArchiveApp:
             self.meta_sel_count_label.config(text=f"Selected: {sel_count} / Total: {total_count} (Showing: {filt_count})")
         else:
             self.meta_sel_count_label.config(text=f"Selected: {sel_count} / Total: {total_count}")
+            
+        deriv_count = sum(1 for item in self.meta_all_items if item.get("status") == "⚠ Needs Derivation" or self.metadata_cache.get(item["identifier"], {}).get("derivation_state") == "needs_derivation" or self.metadata_cache.get(item["identifier"], {}).get("derivation_pending"))
+        if deriv_count > 0:
+            self.meta_deriv_count_label.config(text=f" | Awaiting Derivation: {deriv_count}")
+        else:
+            self.meta_deriv_count_label.config(text="")
 
     def toggle_item_selection(self, ident):
         """Toggles selection for a single item by identifier."""
@@ -2158,7 +2291,38 @@ class ArchiveApp:
             col = self.meta_tree.identify_column(event.x)
             item_ident = self.meta_tree.identify_row(event.y)
             if item_ident and col == "#1":
-                self.toggle_item_selection(item_ident)
+                # Check for Shift key (0x0001 bit in state)
+                if event.state & 1 and getattr(self, "meta_last_clicked_ident", None) and self.meta_tree.exists(self.meta_last_clicked_ident):
+                    # Get all visible items in order
+                    all_vis = self.meta_tree.get_children()
+                    try:
+                        idx1 = all_vis.index(self.meta_last_clicked_ident)
+                        idx2 = all_vis.index(item_ident)
+                        start_idx = min(idx1, idx2)
+                        end_idx = max(idx1, idx2)
+                        
+                        # Target state is whatever the last clicked item is currently
+                        target_state = self.meta_last_clicked_ident in self.meta_selected_ids
+                        
+                        for i in range(start_idx, end_idx + 1):
+                            curr_ident = all_vis[i]
+                            if target_state and curr_ident not in self.meta_selected_ids:
+                                self.meta_selected_ids.add(curr_ident)
+                                cur_vals = list(self.meta_tree.item(curr_ident, "values"))
+                                cur_vals[0] = "☑"
+                                self.meta_tree.item(curr_ident, values=cur_vals)
+                            elif not target_state and curr_ident in self.meta_selected_ids:
+                                self.meta_selected_ids.remove(curr_ident)
+                                cur_vals = list(self.meta_tree.item(curr_ident, "values"))
+                                cur_vals[0] = "☐"
+                                self.meta_tree.item(curr_ident, values=cur_vals)
+                        self.update_selection_count_label()
+                    except ValueError:
+                        self.toggle_item_selection(item_ident)
+                else:
+                    self.toggle_item_selection(item_ident)
+                
+                self.meta_last_clicked_ident = item_ident
 
     def on_tree_space(self, event):
         """Toggles checkboxes for all highlighted rows when spacebar is pressed."""
@@ -2329,12 +2493,347 @@ class ArchiveApp:
                 with open(file_path, "w", encoding="utf-8-sig") as f:
                     for d in export_data:
                         tags_str = ", ".join(d["tags"]) if isinstance(d["tags"], list) else d["tags"]
-                        f.write(f"ID: {d['identifier']} | Title: {d['title']} | Date: {d['date']} | Tags: {tags_str}\n")
+                        f.write(f"ID: {d['identifier']} | Title: {d['title']} | Date: {d['date']} | Tags: {tags_str}\n\n")
             
             messagebox.showinfo("Export Successful", f"Exported {len(export_data)} items to {os.path.basename(file_path)}")
             
         except Exception as e:
             messagebox.showerror("Export Error", f"Failed to export table:\n{str(e)}")
+
+
+    def import_metadata_table(self):
+        """Imports a metadata table snapshot, identifies changes, and applies them."""
+        if getattr(self, "meta_is_running", False) and not self.meta_stop_event.is_set():
+            messagebox.showwarning("Busy", "A metadata update is currently running. Please cancel it or wait for it to finish.")
+            return
+
+        file_path = filedialog.askopenfilename(
+            filetypes=[("CSV & JSON files", "*.csv *.json"), ("CSV files", "*.csv"), ("JSON files", "*.json"), ("All files", "*.*")],
+            title="Import Metadata Table Snapshot"
+        )
+        if not file_path:
+            return
+
+        try:
+            ext = os.path.splitext(file_path)[1].lower()
+            import_data = []
+            if ext == ".json":
+                with open(file_path, "r", encoding="utf-8-sig") as f:
+                    import_data = json.load(f)
+            elif ext == ".csv":
+                import csv
+                with open(file_path, "r", encoding="utf-8-sig") as f:
+                    reader = csv.DictReader(f)
+                    import_data = list(reader)
+            else:
+                messagebox.showerror("Format Error", "Unsupported file format. Please use CSV or JSON.")
+                return
+
+            jobs = []
+            scanned = 0
+            skipped_missing_local = 0
+            no_change = 0
+
+            for row in import_data:
+                # Normalize keys to lowercase to avoid case-sensitivity issues with Excel
+                norm_row = {str(k).strip().lower(): v for k, v in row.items() if k}
+                
+                ident = norm_row.get("identifier") or norm_row.get("id")
+                if not ident:
+                    continue
+                scanned += 1
+                
+                if ident not in self.metadata_cache:
+                    skipped_missing_local += 1
+                    continue
+
+                raw_tags = norm_row.get("tags")
+                new_tags = []
+                if isinstance(raw_tags, list):
+                    new_tags = [str(t).strip() for t in raw_tags if str(t).strip()]
+                elif isinstance(raw_tags, str):
+                    new_tags = [t.strip() for t in raw_tags.split(",") if t.strip()]
+
+                new_lang = norm_row.get("language", "").strip()
+                new_title = norm_row.get("title", "").strip()
+
+                current_tags = self.metadata_cache[ident].get("tags", [])
+                current_lang = self.metadata_cache[ident].get("language", "")
+                current_title = self.metadata_cache[ident].get("title", "")
+
+                update_tags = set(new_tags) != set(current_tags)
+                update_lang = bool(new_lang and new_lang != current_lang)
+                update_title = bool(new_title and new_title != current_title)
+
+                if update_tags or update_lang or update_title:
+                    jobs.append({
+                        "identifier": ident,
+                        "update_tags": update_tags,
+                        "new_tags": new_tags,
+                        "update_lang": update_lang,
+                        "new_lang": new_lang,
+                        "update_title": update_title,
+                        "new_title": new_title
+                    })
+                else:
+                    no_change += 1
+
+            missing_from_file = len(self.metadata_cache) - (scanned - skipped_missing_local)
+            if missing_from_file < 0:
+                missing_from_file = 0
+
+            if not jobs:
+                messagebox.showinfo("Import", "No metadata differences found. Everything is up to date.")
+                return
+
+            job_idents = [job["identifier"] for job in jobs]
+            deriving_items = [x for x in self.meta_all_items if x["identifier"] in job_idents and x.get("status") == "✔ Deriv Queued"]
+            if deriving_items:
+                msg = (
+                    f"{len(deriving_items)} of the items to be updated were recently queued for derivation.\n\n"
+                    "The Internet Archive typically locks items while they are processing, which means metadata edits for these items will likely fail and return an error.\n\n"
+                    "Do you want to proceed anyway?"
+                )
+                if not messagebox.askyesno("Derivation Locked Warning", msg):
+                    return
+
+            proceed = self.show_import_preview_dialog(jobs, scanned, skipped_missing_local, missing_from_file)
+            if not proceed:
+                return
+
+            self.meta_is_running = True
+            self.meta_stop_event.clear()
+            self.meta_update_btn.config(state=tk.DISABLED)
+            self.meta_derive_btn.config(state=tk.DISABLED)
+            self.meta_cancel_btn.config(state=tk.NORMAL)
+            self.meta_sync_btn.config(state=tk.DISABLED)
+            self.meta_export_btn.config(state=tk.DISABLED)
+            self.meta_import_btn.config(state=tk.DISABLED)
+            
+            self.meta_prog_bar["value"] = 0
+            self.meta_prog_bar["maximum"] = len(jobs)
+            self.meta_status_label.config(text=f"Starting batch import for {len(jobs)} item(s)...")
+
+            threading.Thread(target=self._import_metadata_worker, args=(jobs,), daemon=True).start()
+
+        except Exception as e:
+            messagebox.showerror("Import Error", f"Failed to process file:\n{str(e)}")
+
+    def show_import_preview_dialog(self, jobs, scanned, skipped_missing_local, missing_from_file):
+        """Displays a modal preview window showing exact metadata changes before applying them."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Preview Batch Import Changes")
+        dialog.geometry("950x500")
+        dialog.minsize(700, 400)
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        proceed_var = tk.BooleanVar(value=False)
+        
+        # 1. Summary Label
+        summary_frame = ttk.Frame(dialog, padding=10)
+        summary_frame.pack(fill=tk.X)
+        
+        ttk.Label(summary_frame, text=f"Scanned {scanned} items. Found {len(jobs)} item(s) with changed metadata.", font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 5))
+        
+        if skipped_missing_local > 0:
+            ttk.Label(summary_frame, text=f"⚠ Ignored {skipped_missing_local} unknown item(s) from the file (ID not found in local archive).", foreground="#d32f2f").pack(anchor=tk.W)
+        if missing_from_file > 0:
+            ttk.Label(summary_frame, text=f"⚠ Ignored {missing_from_file} local item(s) not present in the file.", foreground="#f57c00").pack(anchor=tk.W)
+            
+        # 2. Treeview (Diff table)
+        tree_frame = ttk.Frame(dialog, padding=10)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        
+        cols = ("identifier", "title", "field", "old", "new")
+        tree = ttk.Treeview(tree_frame, columns=cols, show="headings", selectmode="none")
+        tree.heading("identifier", text="Identifier")
+        tree.heading("title", text="Title")
+        tree.heading("field", text="Field")
+        tree.heading("old", text="Old Value")
+        tree.heading("new", text="New Value")
+        
+        tree.column("identifier", width=120, stretch=False)
+        tree.column("title", width=200)
+        tree.column("field", width=70, stretch=False)
+        tree.column("old", width=250)
+        tree.column("new", width=250)
+        
+        scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Populate Tree
+        for job in jobs:
+            ident = job["identifier"]
+            item_data = next((x for x in self.meta_all_items if x["identifier"] == ident), None)
+            title = item_data["title"] if item_data else "Unknown Title"
+            
+            if job["update_tags"]:
+                old_tags = self.metadata_cache.get(ident, {}).get("tags", [])
+                old_str = ", ".join(old_tags) if old_tags else "[None]"
+                new_str = ", ".join(job["new_tags"]) if job["new_tags"] else "[None]"
+                tree.insert("", tk.END, values=(ident, title, "Tags", old_str, new_str))
+                
+            if job["update_lang"]:
+                old_lang = self.metadata_cache.get(ident, {}).get("language", "")
+                old_str = old_lang if old_lang else "[None]"
+                new_str = job["new_lang"] if job["new_lang"] else "[None]"
+                tree.insert("", tk.END, values=(ident, title, "Language", old_str, new_str))
+                
+            if job.get("update_title"):
+                old_title = self.metadata_cache.get(ident, {}).get("title", "")
+                old_str = old_title if old_title else "[None]"
+                new_str = job["new_title"] if job["new_title"] else "[None]"
+                tree.insert("", tk.END, values=(ident, title, "Title", old_str, new_str))
+                
+        # 3. Action Buttons
+        btn_frame = ttk.Frame(dialog, padding=10)
+        btn_frame.pack(fill=tk.X)
+        
+        def on_apply():
+            proceed_var.set(True)
+            dialog.destroy()
+            
+        def on_cancel():
+            proceed_var.set(False)
+            dialog.destroy()
+            
+        dialog.protocol("WM_DELETE_WINDOW", on_cancel)
+        
+        ttk.Button(btn_frame, text="Cancel", command=on_cancel).pack(side=tk.RIGHT, padx=5)
+        apply_btn = ttk.Button(btn_frame, text="Apply Changes to Archive.org", command=on_apply)
+        apply_btn.pack(side=tk.RIGHT, padx=5)
+        
+        dialog.bind('<Return>', lambda e: on_apply())
+        dialog.bind('<Escape>', lambda e: on_cancel())
+        
+        self.root.wait_window(dialog)
+        return proceed_var.get()
+
+    def _import_metadata_worker(self, jobs):
+        """Background worker that calls Archive.org Metadata API with job queue."""
+        total = len(jobs)
+        success_count = 0
+        fail_count = 0
+        
+        for idx, job in enumerate(jobs):
+            if self.meta_stop_event.is_set():
+                break
+                
+            ident = job["identifier"]
+            item_data = next((x for x in self.meta_all_items if x["identifier"] == ident), None)
+            title = item_data["title"] if item_data else ident
+            
+            old_tags = self.metadata_cache.get(ident, {}).get("tags", [])
+            old_lang = self.metadata_cache.get(ident, {}).get("language", "")
+            old_title = self.metadata_cache.get(ident, {}).get("title", "")
+            
+            self.root.after(0, lambda i=idx, t=total, idnt=ident: self._update_meta_ui_progress(i, t, f"Importing ({i+1}/{t}): {idnt}..."))
+            self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "Updating..."))
+            
+            patch_dict = {}
+            if job["update_tags"]:
+                patch_dict["subject"] = job["new_tags"] if job["new_tags"] else "REMOVE_TAG"
+            if job["update_lang"]:
+                patch_dict["language"] = job["new_lang"] if job["new_lang"] else "REMOVE_TAG"
+            if job.get("update_title"):
+                patch_dict["title"] = job["new_title"] if job["new_title"] else "REMOVE_TAG"
+
+            max_meta_retries = 3
+            meta_attempt = 0
+
+            while meta_attempt < max_meta_retries:
+                meta_attempt += 1
+                if self.meta_stop_event.is_set():
+                    break
+                try:
+                    import internetarchive as ia
+                    item = ia.get_item(ident)
+                    resp = item.modify_metadata(patch_dict, priority=-5)
+                    
+                    if resp.status_code == 200:
+                        success_count += 1
+                        if ident in self.metadata_cache:
+                            if job["update_tags"]:
+                                self.metadata_cache[ident]["tags"] = job["new_tags"]
+                            if job["update_lang"]:
+                                self.metadata_cache[ident]["language"] = job["new_lang"]
+                            if job.get("update_title"):
+                                self.metadata_cache[ident]["title"] = job["new_title"]
+                            self.metadata_cache[ident]["last_updated"] = time.strftime("%Y-%m-%d %H:%M:%S")
+                            
+                        if item_data:
+                            if job["update_tags"]:
+                                item_data["tags"] = job["new_tags"]
+                            if job["update_lang"]:
+                                item_data["language"] = job["new_lang"]
+                            if job.get("update_title"):
+                                item_data["title"] = job["new_title"]
+                            item_data["status"] = "✔ Updated"
+                            
+                        self.root.after(0, lambda idnt=ident, ut=job["update_tags"], t=job["new_tags"], ul=job["update_lang"], l=job["new_lang"], uti=job.get("update_title", False), nti=job.get("new_title", ""): self._on_item_meta_success(idnt, ut, t, ul, l, uti, nti))
+                        
+                        now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                        log_details = []
+                        if job["update_tags"]:
+                            log_details.append(f"Tags: {old_tags} -> {job['new_tags']}")
+                        if job["update_lang"]:
+                            log_details.append(f"Lang: '{old_lang}' -> '{job['new_lang']}'")
+                        if job.get("update_title"):
+                            log_details.append(f"Title: '{old_title}' -> '{job['new_title']}'")
+                        with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] SUCCESS (IMPORT) | {ident} | {title} | {' | '.join(log_details)}\n\n")
+                        break
+                    elif resp.status_code in [429, 503]:
+                        backoff_sec = (2 ** meta_attempt) * 5
+                        now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                        with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] RATE_LIMIT (IMPORT) ({resp.status_code}) | {ident} | Backing off {backoff_sec}s before retry {meta_attempt}/{max_meta_retries}\n\n")
+                        
+                        if meta_attempt < max_meta_retries:
+                            self.root.after(0, lambda i=idx, t=total, idnt=ident, s=backoff_sec, code=resp.status_code: 
+                                self._update_meta_ui_progress(i, t, f"Rate limited (HTTP {code}) on {idnt}. Backing off {s}s..."))
+                            self.root.after(0, lambda idnt=ident, s=backoff_sec: self._set_row_status(idnt, f"Backoff ({s}s)..."))
+                            for _ in range(int(backoff_sec * 10)):
+                                if self.meta_stop_event.is_set():
+                                    break
+                                time.sleep(0.1)
+                            continue
+                        else:
+                            fail_count += 1
+                            if item_data:
+                                item_data["status"] = "⚠ Rate Limited"
+                            self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "⚠ Rate Limited"))
+                            with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                                f.write(f"[{now_str}] ERROR (Max Retries) | {ident} | Rate limit persisted after {max_meta_retries} attempts\n\n")
+                            break
+                    else:
+                        fail_count += 1
+                        err_msg = resp.text[:100]
+                        if item_data:
+                            item_data["status"] = "⚠ Error"
+                        self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "⚠ Error"))
+                        now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                        with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] ERROR ({resp.status_code}) | {ident} | {title} | {err_msg}\n\n")
+                        break
+                except Exception as e:
+                    now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                    with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                        f.write(f"[{now_str}] ERROR | {ident} | Exception: {str(e)}\n\n")
+                    if meta_attempt == max_meta_retries:
+                        fail_count += 1
+                        self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "⚠ Error"))
+                    else:
+                        time.sleep(2)
+                        
+        was_stopped = self.meta_stop_event.is_set()
+        self.meta_is_running = False
+        self.save_metadata_cache()
+        self.root.after(0, lambda: self._on_bulk_meta_finish(success_count, fail_count, was_stopped))
+
 
     def sort_metadata_table(self, col):
         """Sorts table by column."""
@@ -2456,6 +2955,7 @@ class ArchiveApp:
                 elif lang is None:
                     lang = ""
                     
+                existing_cache = self.metadata_cache.get(ident, {})
                 self.metadata_cache[ident] = {
                     "identifier": ident,
                     "video_id": vid,
@@ -2464,7 +2964,9 @@ class ArchiveApp:
                     "language": lang,
                     "date": date,
                     "source": source,
-                    "creator": item.get("creator", "")
+                    "creator": item.get("creator", ""),
+                    "derivation_pending": existing_cache.get("derivation_pending", False),
+                    "derivation_state": existing_cache.get("derivation_state")
                 }
                 count += 1
                 if count % 50 == 0:
@@ -2475,7 +2977,7 @@ class ArchiveApp:
                 try:
                     with open(ledger_path, "a", encoding="utf-8") as f:
                         for vid, t in new_txt_entries:
-                            f.write(f"# {t} (Synced from Account)\nyoutube {vid}\n\n")
+                            f.write(f"# {t} (Synced from Account)\nyoutube {vid}\n\n\n")
                 except Exception as e:
                     print(f"Error appending to ledger: {e}")
                     
@@ -2502,12 +3004,129 @@ class ArchiveApp:
         self.meta_sync_status_label.config(text="Sync failed")
         messagebox.showerror("Sync Error", f"Could not sync from Archive.org: {err}")
 
+    def start_bulk_derivation(self):
+        """Initiates the bulk derivation process."""
+        selected_idents = [ident for ident in self.meta_selected_ids if any(x["identifier"] == ident for x in self.meta_all_items)]
+        if not selected_idents:
+            messagebox.showwarning("No Items Selected", "Please select at least one video to derive using the checkboxes.")
+            return
+
+        msg = (
+            f"You are about to submit derivation tasks for {len(selected_idents)} item(s) on Internet Archive.\n\n"
+            f"This will command Archive.org to process the original videos into streamable MP4s and generate thumbnails in the background.\n\n"
+            f"Do you want to proceed?"
+        )
+        if not messagebox.askyesno("Confirm Bulk Derivation", msg):
+            return
+                
+        # Setup UI for execution
+        self.meta_stop_event.clear()
+        self.meta_update_btn.config(state=tk.DISABLED)
+        self.meta_derive_btn.config(state=tk.DISABLED)
+        self.meta_cancel_btn.config(state=tk.NORMAL)
+        self.meta_sync_btn.config(state=tk.DISABLED)
+        self.meta_export_btn.config(state=tk.DISABLED)
+        self.meta_import_btn.config(state=tk.DISABLED)
+        self.meta_prog_bar["value"] = 0
+        self.meta_prog_bar["maximum"] = len(selected_idents)
+        self.meta_status_label.config(text=f"Starting bulk derivation for {len(selected_idents)} item(s)...")
+        
+        self.meta_worker_thread = threading.Thread(
+            target=self._bulk_derivation_worker, 
+            args=(selected_idents,), 
+            daemon=True
+        )
+        self.meta_worker_thread.start()
+
+    def _bulk_derivation_worker(self, identifiers):
+        """Background worker that calls ia tasks --cmd derive.php"""
+        total = len(identifiers)
+        success_count = 0
+        fail_count = 0
+        
+        for idx, ident in enumerate(identifiers):
+            if self.meta_stop_event.is_set():
+                break
+                
+            self.root.after(0, lambda i=idx, t=total, idnt=ident: self._update_meta_ui_progress(i, t, f"Queuing derivation ({i+1}/{t}): {idnt}..."))
+            self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "Queuing..."))
+            
+            cmd = [self.get_executable("ia"), "tasks", ident, "--cmd", "derive.php"]
+            
+            try:
+                result = subprocess.run(cmd, capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                if result.returncode == 0 or "success:" in (result.stderr + result.stdout).lower():
+                    success_count += 1
+                    # Update cache
+                    if ident in self.metadata_cache:
+                        self.metadata_cache[ident]["derivation_pending"] = False
+                        self.metadata_cache[ident]["derivation_state"] = "queued"
+                    
+                    item_data = next((x for x in self.meta_all_items if x["identifier"] == ident), None)
+                    if item_data:
+                        item_data["status"] = "✔ Deriv Queued"
+                        
+                    self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✔ Deriv Queued"))
+                    
+                    now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                    with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                        f.write(f"[{now_str}] SUCCESS | {ident} | Derivation Task Queued\n\n")
+                else:
+                    fail_count += 1
+                    err_msg = result.stderr.strip() or result.stdout.strip()
+                    self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✗ Error"))
+                    now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                    with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                        f.write(f"[{now_str}] ERROR | {ident} | Derivation failed: {err_msg[:100]}\n\n")
+            except Exception as e:
+                fail_count += 1
+                self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✗ Error"))
+                now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+                with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                    f.write(f"[{now_str}] EXCEPTION | {ident} | {e}\n\n")
+                    
+            # Courtesy delay between items (1.5s) to respect IA rate limits
+            for _ in range(15):
+                if self.meta_stop_event.is_set():
+                    break
+                time.sleep(0.1)
+                
+        self.save_metadata_cache()
+        self.root.after(0, lambda s=success_count, f=fail_count, stopped=self.meta_stop_event.is_set(): self._on_bulk_meta_finish(s, f, stopped))
+
+    def open_metadata_log(self):
+        """Opens the metadata edits log file."""
+        import os
+        log_path = "metadata_edits.txt"
+        if not os.path.exists(log_path):
+            with open(log_path, "w", encoding="utf-8") as f:
+                f.write("=== Metadata Edits Log ===\n\n")
+        try:
+            os.startfile(log_path)
+        except AttributeError:
+            # Fallback for non-Windows
+            import subprocess, sys
+            opener = "open" if sys.platform == "darwin" else "xdg-open"
+            subprocess.call([opener, log_path])
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not open log: {e}")
+
     def start_bulk_metadata_update(self):
         """Initiates the bulk metadata overwrite process."""
         selected_idents = [ident for ident in self.meta_selected_ids if any(x["identifier"] == ident for x in self.meta_all_items)]
         if not selected_idents:
             messagebox.showwarning("No Items Selected", "Please select at least one video to update using the checkboxes.")
             return
+            
+        deriving_items = [x for x in self.meta_all_items if x["identifier"] in selected_idents and x.get("status") == "✔ Deriv Queued"]
+        if deriving_items:
+            msg = (
+                f"{len(deriving_items)} of the selected items were recently queued for derivation.\n\n"
+                "The Internet Archive typically locks items while they are processing, which means metadata edits for these items will likely fail and return an error.\n\n"
+                "Do you want to proceed anyway?"
+            )
+            if not messagebox.askyesno("Derivation Locked Warning", msg):
+                return
             
         update_tags = self.meta_apply_tags_var.get()
         update_lang = self.meta_apply_lang_var.get()
@@ -2568,8 +3187,11 @@ class ArchiveApp:
         # Setup UI for execution
         self.meta_stop_event.clear()
         self.meta_update_btn.config(state=tk.DISABLED)
+        self.meta_derive_btn.config(state=tk.DISABLED)
         self.meta_cancel_btn.config(state=tk.NORMAL)
         self.meta_sync_btn.config(state=tk.DISABLED)
+        self.meta_export_btn.config(state=tk.DISABLED)
+        self.meta_import_btn.config(state=tk.DISABLED)
         self.meta_prog_bar["value"] = 0
         self.meta_prog_bar["maximum"] = len(selected_idents)
         self.meta_status_label.config(text=f"Starting bulk update for {len(selected_idents)} item(s)...")
@@ -2650,15 +3272,15 @@ class ArchiveApp:
                             log_details.append(f"Tags: {old_tags} -> {new_tags}")
                         if update_lang:
                             log_details.append(f"Lang: '{old_lang}' -> '{target_lang_code}'")
-                        with open("metadata_edits.log", "a", encoding="utf-8") as f:
-                            f.write(f"[{now_str}] SUCCESS | {ident} | {title} | {' | '.join(log_details)}\n")
+                        with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] SUCCESS | {ident} | {title} | {' | '.join(log_details)}\n\n")
                         break
                     elif resp.status_code in [429, 503]:
                         # Internet Archive rate limit or write throttle hit
                         backoff_sec = (2 ** meta_attempt) * 5  # 10s, 20s, 40s
                         now_str = time.strftime("%Y-%m-%d %H:%M:%S")
-                        with open("metadata_edits.log", "a", encoding="utf-8") as f:
-                            f.write(f"[{now_str}] RATE_LIMIT ({resp.status_code}) | {ident} | Backing off {backoff_sec}s before retry {meta_attempt}/{max_meta_retries}\n")
+                        with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] RATE_LIMIT ({resp.status_code}) | {ident} | Backing off {backoff_sec}s before retry {meta_attempt}/{max_meta_retries}\n\n")
                         
                         if meta_attempt < max_meta_retries:
                             self.root.after(0, lambda i=idx, t=total, idnt=ident, s=backoff_sec, code=resp.status_code: 
@@ -2674,8 +3296,8 @@ class ArchiveApp:
                             if item_data:
                                 item_data["status"] = "✗ Rate Limited"
                             self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✗ Rate Limited"))
-                            with open("metadata_edits.log", "a", encoding="utf-8") as f:
-                                f.write(f"[{now_str}] ERROR (Max Retries) | {ident} | Rate limit persisted after {max_meta_retries} attempts\n")
+                            with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                                f.write(f"[{now_str}] ERROR (Max Retries) | {ident} | Rate limit persisted after {max_meta_retries} attempts\n\n")
                             break
                     else:
                         fail_count += 1
@@ -2684,8 +3306,8 @@ class ArchiveApp:
                             item_data["status"] = "✗ Error"
                         self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✗ Error"))
                         now_str = time.strftime("%Y-%m-%d %H:%M:%S")
-                        with open("metadata_edits.log", "a", encoding="utf-8") as f:
-                            f.write(f"[{now_str}] ERROR ({resp.status_code}) | {ident} | {title} | {err_msg}\n")
+                        with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] ERROR ({resp.status_code}) | {ident} | {title} | {err_msg}\n\n")
                         break
                         
                 except Exception as e:
@@ -2704,8 +3326,8 @@ class ArchiveApp:
                             item_data["status"] = "✗ Error"
                         self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✗ Error"))
                         now_str = time.strftime("%Y-%m-%d %H:%M:%S")
-                        with open("metadata_edits.log", "a", encoding="utf-8") as f:
-                            f.write(f"[{now_str}] EXCEPTION | {ident} | {title} | {e}\n")
+                        with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                            f.write(f"[{now_str}] EXCEPTION | {ident} | {title} | {e}\n\n")
                         break
                     
             # Courtesy delay between items (1.5s) to respect IA rate limits
@@ -2728,21 +3350,26 @@ class ArchiveApp:
                 cur_vals[6] = status_text
                 self.meta_tree.item(ident, values=cur_vals)
 
-    def _on_item_meta_success(self, ident, update_tags, new_tags, update_lang, new_lang):
+    def _on_item_meta_success(self, ident, update_tags, new_tags, update_lang, new_lang, update_title=False, new_title=""):
         if self.meta_tree.exists(ident):
             cur_vals = list(self.meta_tree.item(ident, "values"))
             if len(cur_vals) >= 7:
+                if update_title:
+                    cur_vals[3] = new_title if new_title else "-"
                 if update_lang:
-                    cur_vals[4] = new_lang if new_lang else "—"
+                    cur_vals[4] = new_lang if new_lang else "-"
                 if update_tags:
-                    cur_vals[5] = ", ".join(new_tags) if new_tags else "—"
-                cur_vals[6] = "✓ Updated"
+                    cur_vals[5] = ", ".join(new_tags) if new_tags else "-"
+                cur_vals[6] = "✔ Updated"
                 self.meta_tree.item(ident, values=cur_vals)
 
     def _on_bulk_meta_finish(self, success_count, fail_count, was_stopped):
         self.meta_update_btn.config(state=tk.NORMAL)
+        self.meta_derive_btn.config(state=tk.NORMAL)
         self.meta_cancel_btn.config(state=tk.DISABLED)
         self.meta_sync_btn.config(state=tk.NORMAL)
+        self.meta_export_btn.config(state=tk.NORMAL)
+        self.meta_import_btn.config(state=tk.NORMAL)
         
         status_msg = f"Completed: {success_count} updated"
         if fail_count > 0:
@@ -3129,8 +3756,20 @@ class ArchiveApp:
             commit_items.clear()
             version_data.clear()
 
+            try:
+                raw_url = f"https://raw.githubusercontent.com/{repo}/main/yt_archive_app.py"
+                resp = requests.get(raw_url, timeout=5)
+                main_version = "Unknown"
+                if resp.status_code == 200:
+                    import re
+                    match = re.search(r'APP_VERSION\s*=\s*[\'"]([^\'"]+)[\'"]', resp.text)
+                    if match:
+                        main_version = match.group(1)
+                latest_key = f"Latest v{main_version} (main branch)"
+            except Exception:
+                latest_key = "Latest (main branch)"
+
             # Always offer "Latest (main branch)"
-            latest_key = "Latest (main branch)"
             release_items.append(latest_key)
             version_data[latest_key] = {
                 "type": "Bleeding-Edge Branch",
@@ -3308,6 +3947,99 @@ class ArchiveApp:
 
         # Initial fetch on dialog open
         fetch_versions_thread()
+
+
+    def toggle_auto_derive_engine(self):
+        """Starts or stops the background Auto-Derivation Engine."""
+        self.save_settings()
+        if self.auto_derive_var.get():
+            self.engine_status_lbl.config(text="Engine Running...", foreground="green")
+            self.auto_derive_stop_event.clear()
+            self.auto_derive_thread = threading.Thread(target=self._auto_derive_daemon_loop, daemon=True)
+            self.auto_derive_thread.start()
+        else:
+            self.engine_status_lbl.config(text="Engine Stopped", foreground="gray")
+            self.auto_derive_stop_event.set()
+
+    def _auto_derive_daemon_loop(self):
+        """Background loop that periodically queues and verifies derivations."""
+        import time
+        while not self.auto_derive_stop_event.is_set():
+            self.root.after(0, lambda: self.engine_status_lbl.config(text="Sweeping..."))
+            try:
+                # Phase 1: Verify queued items or items marked as error during verification
+                queued_items = [ident for ident, data in self.metadata_cache.items() if data.get("derivation_state") in ["queued", "error"]]
+                if queued_items:
+                    import internetarchive as ia
+                    for ident in queued_items:
+                        if self.auto_derive_stop_event.is_set(): break
+                        try:
+                            item = ia.get_item(ident)
+                            files = item.item_metadata.get("files", [])
+                            is_derived = any(f.get("source") == "derivative" for f in files)
+                            if is_derived:
+                                self.metadata_cache[ident]["derivation_state"] = "derived"
+                                self.metadata_cache[ident]["derivation_pending"] = False
+                                self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✔ Derived"))
+                            else:
+                                # Still queued or error state persists until it eventually finishes
+                                pass
+                        except Exception as e:
+                            # Verification error, leave it for next sweep
+                            import time
+                            with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                                f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] ERROR (DAEMON_VERIFY) | {ident} | Exception: {str(e)}\n\n")
+                        time.sleep(1) # Courtesy delay
+
+                # Phase 2: Queue needs_derivation items
+                needs_items = [ident for ident, data in self.metadata_cache.items() if data.get("derivation_state") in ["needs_derivation", "error"] or (not data.get("derivation_state") and data.get("derivation_pending"))]
+                if needs_items:
+                    import subprocess
+                    for ident in needs_items:
+                        if self.auto_derive_stop_event.is_set(): break
+                        try:
+                            cmd = [self.get_executable("ia"), "tasks", ident, "--cmd", "derive.php"]
+                            result = subprocess.run(cmd, capture_output=True, text=True, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                            if result.returncode == 0 or "success:" in (result.stderr + result.stdout).lower():
+                                self.metadata_cache[ident]["derivation_state"] = "queued"
+                                self.metadata_cache[ident]["derivation_pending"] = False
+                                self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "⏳ Deriv Queued"))
+                                import time
+                                with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                                    f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] SUCCESS (DAEMON_QUEUE) | {ident} | Derivation queued.\n\n")
+                            else:
+                                self.metadata_cache[ident]["derivation_state"] = "error"
+                                self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✗ Error (Deriv)"))
+                                import time
+                                with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                                    f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] ERROR (DAEMON_QUEUE) | {ident} | Subprocess failed (Code {result.returncode}): {result.stderr[:200] if result.stderr else 'Unknown error'}\n\n")
+                        except Exception as e:
+                            self.metadata_cache[ident]["derivation_state"] = "error"
+                            self.root.after(0, lambda idnt=ident: self._set_row_status(idnt, "✗ Error (Deriv)"))
+                            import time
+                            with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                                f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] EXCEPTION (DAEMON_QUEUE) | {ident} | {str(e)}\n\n")
+                        time.sleep(1)
+
+                self.save_metadata_cache()
+                self.root.after(0, self.update_selection_count_label)
+            except Exception as e:
+                import time
+                with open("metadata_edits.txt", "a", encoding="utf-8") as f:
+                    f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] FATAL DAEMON CRASH | Exception: {str(e)}\n\n")
+
+            # Sleep for the interval, checking for stop event periodically
+            try:
+                interval_mins = self.auto_derive_interval_var.get()
+            except Exception:
+                interval_mins = 5
+            if interval_mins < 1: interval_mins = 1
+            total_secs = interval_mins * 60
+            self.root.after(0, lambda: self.engine_status_lbl.config(text=f"Waiting {interval_mins}m for next sweep..."))
+            for i in range(total_secs):
+                if self.auto_derive_stop_event.is_set():
+                    break
+                time.sleep(1)
 
 if __name__ == "__main__":
     root = tk.Tk()
