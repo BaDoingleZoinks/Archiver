@@ -791,7 +791,7 @@ class ArchiveApp:
                 with open("archive_history.log", "w", encoding="utf-8") as f:
                     for entry in sorted_entries:
                         ledger_str = entry["ledger"] if entry["ledger"] else "Main Archive"
-                        f.write(f"[{entry['date_str']}] | {entry['ts']} | {entry['vid']} | {entry['title']} | {ledger_str}\n\n")
+                        f.write(f"[{entry['date_str']}] | {entry['ts']} | {entry['vid']} | {entry['title']} | {ledger_str}\n")
 
                 if sorted_entries:
                     newest_ts = sorted_entries[-1]["ts"]
@@ -1138,7 +1138,7 @@ class ArchiveApp:
                     raw_date = item.get("addeddate") or item.get("publicdate")
                     ts = self.parse_ia_date(raw_date)
                     if ts > 0:
-                        self._cached_remote_upload_time = ts
+                        self._cached_remote_upload_time = max(getattr(self, '_cached_remote_upload_time', 0), ts)
                         self._last_remote_check_time = time.time()
             except Exception:
                 pass
@@ -1161,9 +1161,9 @@ class ArchiveApp:
         if os.path.exists("archive_history.log"):
             try:
                 with open("archive_history.log", "r", encoding="utf-8") as f:
-                    lines = f.readlines()
+                    lines = [line.strip() for line in f.readlines() if line.strip()]
                     if lines:
-                        last_line = lines[-1].strip()
+                        last_line = lines[-1]
                         parts = last_line.split(" | ")
                         if len(parts) >= 2:
                             log_time = float(parts[1])
@@ -1184,7 +1184,7 @@ class ArchiveApp:
             date_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now))
             ledger_label = ledger_name.strip() if ledger_name else "Main Archive"
             with open("archive_history.log", "a", encoding="utf-8") as f:
-                f.write(f"[{date_str}] | {now} | {video_id} | {title} | {ledger_label}\n\n")
+                f.write(f"[{date_str}] | {now} | {video_id} | {title} | {ledger_label}\n")
             self.log(f"[History] Recorded successful upload to archive_history.log (Ledger: {ledger_label})")
             
             # Automatically update local metadata cache

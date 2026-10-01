@@ -706,3 +706,174 @@
 
 [2026-09-30 01:17:31] EXCEPTION | yt-archive--htt-gm30aw | Ferrosur Roca. Tren 113 por Luis Guillón.... | yt-archive--htt-gm30aw cannot be located because it is dark or does not exist.
 
+[2026-09-30 11:47:09] SUCCESS | yt-archive--8hlicezjry | Ferrosur Roca. Tren 113 a pura bocina por Guillon...!!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:47:13] SUCCESS | yt-archive--aqhrgw8h-o | Ferrosur Roca. 9016 con "cortísimo 232"...!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:47:17] SUCCESS | yt-archive--socjhq0ba0 | Ferrosur Roca. Tren 494 en un clásico día de invierno. | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:47:22] SUCCESS | yt-archive--kwyazaosfu | Ferrosur Roca. Tren militar a pura bocina por "pan ruta 41"...!!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:47:26] SUCCESS | yt-archive-vy3jjlxo4z0 | Ferrosur Roca. Tren militar por "Videla Dorna".... | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:47:31] SUCCESS | yt-archive-mar5vwzhbha | Ferrosur Roca. Tren 236 trasladando a la A910 de TA. | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:47:35] SUCCESS | yt-archive--uy9nfzm0aw | Ferrosur Roca / Trenes Argentinos. Hermosa acelerada de la 9003...!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:47:40] SUCCESS | yt-archive-kambjr4atoi | Ferrosur Roca. La "burra" a toda bocina con "el militar" por San Miguel del Monte...!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:47:45] SUCCESS | yt-archive-h18ijboargi | Ferrosur Roca. Tren 236 bien variado por Monte Grande. | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:47:49] SUCCESS | yt-archive-3mhc6fuujue | Ferrosur Roca. Tren 113 nuevamente "al máximo" de su capacidad...!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:47:54] SUCCESS | yt-archive-9fkkcaooeio | Ferrosur Roca. Corto "236" por Luis Guillón.... | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:48:26] SUCCESS | yt-archive-j1cwqahcbvi | Ferrosur Roca. Tren 232 con la 9061 de titular y 8105 de simple vehículo...!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:48:30] SUCCESS | yt-archive-tiya5apv-km | Ferrosur Roca. La Burra con "el militar" por estación Hospital Ezeiza... | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:48:35] SUCCESS | yt-archive-4tzxsu2bx-4 | Ferrosur Roca. El "113" por El Jaguel.... | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:48:40] SUCCESS | yt-archive-gvcbu0k-wvq | Ferrosur Roca. Tren 236 por Luis Guillón...!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:48:44] SUCCESS | yt-archive-aeyye17ubco | Ferrosur Roca. "Cortísimo" tren 113 por Monte Grande. | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:48:49] SUCCESS | yt-archive-rjpu3rbs-pa | Ferrosur Roca. 9010 al frente del tren 236 por Luis Guillón...!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:48:53] SUCCESS | yt-archive-o93c1xrvm8o | Ferrosur Roca. Tren 113 con el agregado de la 9001 "muerta"... | Tags: ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:49:23] EXCEPTION | yt-archive-e6xcrixa9im | Ferrosur Roca. Tren 113 por Luis Guillón...!!! | yt-archive-e6xcrixa9im cannot be located because it is dark or does not exist.
+
+[2026-09-30 11:49:28] SUCCESS | yt-archive-9imxeap4b8q | Ferrosur Roca. Tren 236 con piedra y vacíos pa' la arena... | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:49:33] SUCCESS | yt-archive-xo-gmnbk1b8 | Ferrosur Roca. La G26 y la Brian al frente del tren 113...!!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:49:41] SUCCESS | yt-archive-rjflaebmnfa | Ferrosur Roca. Tren 113 con la 9004 "al frente". | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:49:45] SUCCESS | yt-archive-r5gat-rt-xk | Ferrosur Roca. El "cuatrocientos noventa y cuatro" en el dia de la primavera.... | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:50:15] EXCEPTION | yt-archive--syyarputms | Ferrosur Roca. Tren 113 a buena velocidad por Luis Guillón... | yt-archive--syyarputms cannot be located because it is dark or does not exist.
+
+[2026-09-30 11:50:20] SUCCESS | yt-archive-p21rkjrmgnq | Ferrosur Roca. La "falsa 9061" al frente del "113" | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:50:25] SUCCESS | yt-archive-0zzd2xsnxfi | Ferrosur Roca. "Video retro". Raro tren 754 cruzando con un Toshiba...!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:50:30] SUCCESS | yt-archive-afuk0ak9shi | Ferrosur Roca. Tren 494 con la 9004 al frente....!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:50:35] SUCCESS | yt-archive-hoz84-5rojk | Ferrosur Roca. Tren 113 con la 9001 por Monte Grande. | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:51:04] EXCEPTION | yt-archive-0u4ul0dyi50 | Ferrosur Roca. Variado 236 con la 9001 al frente. | yt-archive-0u4ul0dyi50 cannot be located because it is dark or does not exist.
+
+[2026-09-30 11:51:08] SUCCESS | yt-archive-1j4q5fw4ups | Ferrosur Roca. Tren 113 con "una burra" al frente...!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:51:13] SUCCESS | yt-archive-qynsclupgyw | Ferrosur Roca. La "primera" de la serie al frente del 494....!!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:51:18] SUCCESS | yt-archive-txiwfzftebg | Ferrosur Roca. Todo lo que "camine" para el 236...!!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:51:23] SUCCESS | yt-archive-3nk2-fluphq | Ferrosur Roca. El "militar" pasando por la "fiesta de Abbott"....!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:51:28] SUCCESS | yt-archive-iaugmeocsfk | Ferrosur Roca. Tren 236 con las últimas luces del domingo...!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:51:32] SUCCESS | yt-archive-rj2csmspz38 | Ferrosur Roca. Tren 113 con la burra a toda bocina..!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:52:02] EXCEPTION | yt-archive--vcqbhl1fzw | Ferrosur Roca. Tren 113 por Luis Guillón...!! | yt-archive--vcqbhl1fzw cannot be located because it is dark or does not exist.
+
+[2026-09-30 11:52:33] SUCCESS | yt-archive-g-pvqsxfcno | Ferrosur Roca. Tren 236 con los vacíos para la arena con la 9008 "a la cabeza"..!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:52:37] SUCCESS | yt-archive-lzmg-yijdoy | Ferrosur Roca. La 9001 con el 113 por Monte Grande..!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:52:42] SUCCESS | yt-archive-ot-f4hsevvg | Ferrosur Roca. Tren 232 con 40 cargados por Lanús..!!! | Tags: ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:52:46] SUCCESS | yt-archive-av-ohzv3kno | Ferrosur Roca. Cortito "754" con burra.... | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:52:51] SUCCESS | yt-archive-xntiz7iew9w | Ferrosur Roca. "Video retro". Burra "trompa larga" en cercanías de Ezeiza. | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:52:56] SUCCESS | yt-archive-kzf-fs1-iby | Ferrosur Roca / Trenes Argentinos. "El militar" por estación Cañuelas...!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:53:00] SUCCESS | yt-archive-exerkpiqev0 | Ferrosur Roca. Martes de "burras"... | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:53:30] EXCEPTION | yt-archive--htt-gm30aw | Ferrosur Roca. Tren 113 por Luis Guillón.... | yt-archive--htt-gm30aw cannot be located because it is dark or does not exist.
+
+[2026-09-30 11:53:34] SUCCESS | yt-archive-ldbe-zn6wji | Ferrosur Roca. 9010 con 10 tolvas hacía el sur .. | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:53:38] SUCCESS | yt-archive-vq9zma9f9sa | Ferrosur Roca. Tren 232 a buena velocidad por Guillón..!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:53:43] SUCCESS | yt-archive-ahchqx4tzok | Ferrosur Roca. La 9049 a los tritonazos con el 113...!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:53:47] SUCCESS | yt-archive-y-4z7nmqe98 | Ferrosur Roca. "Cortito 113" por Monte Grande. | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:53:52] SUCCESS | yt-archive-xvu22y--4z0 | Ferrosur Roca. Tren 236 con vagones bastante maltrechos...!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:53:56] SUCCESS | yt-archive-xeypg8k8mb8 | Ferrosur Roca. La "2000" y un corto 113... | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:54:01] SUCCESS | yt-archive-od-tcbeeaoa | Ferrosur Roca. Rara composición rumbo a Kilo 5. | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:54:05] SUCCESS | yt-archive-chqxn2lnjay | Ferrosur Roca. "Video retro". La última con esquema "adidas" al frente de un corto tren 494. | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:54:16] SUCCESS | yt-archive-hlsdpoxnwww | Ferrosur Roca. Tren 236 rumbo a Kilo 5. | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:54:21] SUCCESS | yt-archive-mka-3n7mjyk | Ferrosur Roca. Tren 113 atrasado por Luis Guillón...!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:54:25] SUCCESS | yt-archive-4hzzzavexne | Ferrosur Roca. Tren 232 con la 9053 "al mando"..!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:54:30] SUCCESS | yt-archive--mgqr7zmgzg | Ferrosur Roca. 9008 al frente del tren 113...!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:55:00] EXCEPTION | yt-archive-s5c8g-o-j8g | Ferrosur Roca. Tren 113 por Luis Guillón. | yt-archive-s5c8g-o-j8g cannot be located because it is dark or does not exist.
+
+[2026-09-30 11:55:05] SUCCESS | yt-archive-qg6l-jp5ip4 | Ferrosur Roca. Tren militar por Luis Guillon...!!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:55:09] SUCCESS | yt-archive-i5-ajswcumy | Ferrosur Roca. 9007 bramando con el 113...!!!! | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:55:15] SUCCESS | yt-archive-igwjsqcwoqg | Ferrosur Roca. "Video retro". Tren 494 lentamente por Luis Guillón.... | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Luis Guillon Ferroviario'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:55:21] SUCCESS | yt-archive-iqczhqz3qwq | Ferrosur Roca/Trenes Argentinos. Tren 113 por Luis Guillón..!!! | Tags: ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución'] -> ['Ferrosur', 'Ferrosur Roca', 'Ferrocarril General Roca', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Plaza Constitución']
+
+[2026-09-30 11:58:21] SUCCESS (DAEMON_QUEUE) | yt-archive-snnbn2u2kls | Derivation queued.
+
+[2026-09-30 11:58:23] SUCCESS (DAEMON_QUEUE) | yt-archive-uo-e7k4ph-g | Derivation queued.
+
+[2026-09-30 11:58:26] SUCCESS (DAEMON_QUEUE) | yt-archive-nsa5lahvtba | Derivation queued.
+
+[2026-09-30 11:58:29] SUCCESS (DAEMON_QUEUE) | yt-archive-lmf-i5yj1vg | Derivation queued.
+
+[2026-09-30 11:58:31] SUCCESS (DAEMON_QUEUE) | yt-archive-fs5gxzkz8lu | Derivation queued.
+
+[2026-09-30 11:58:37] ERROR (DAEMON_QUEUE) | yt-archive-x-ed3ide8gs | Subprocess failed (Code 1): error: Unauthorized to edit item
+
+
+[2026-09-30 12:08:52] SUCCESS (DAEMON_QUEUE) | yt-archive-x-ed3ide8gs | Derivation queued.
+
+[2026-09-30 12:08:55] SUCCESS (DAEMON_QUEUE) | yt-archive-zihtihbxgx0 | Derivation queued.
+
+[2026-09-30 12:08:57] SUCCESS (DAEMON_QUEUE) | yt-archive-4rq9gn8ue7g | Derivation queued.
+
+[2026-09-30 12:09:00] SUCCESS (DAEMON_QUEUE) | yt-archive-cpo6tnjhxvo | Derivation queued.
+
+[2026-09-30 12:09:03] SUCCESS (DAEMON_QUEUE) | yt-archive-fulhjakhyis | Derivation queued.
+
+[2026-09-30 12:09:05] SUCCESS (DAEMON_QUEUE) | yt-archive-yzekuzvfnda | Derivation queued.
+
+[2026-09-30 12:19:26] SUCCESS (DAEMON_QUEUE) | yt-archive-a0uelnrem9y | Derivation queued.
+
+[2026-09-30 12:19:29] SUCCESS (DAEMON_QUEUE) | yt-archive-9wewxduk-na | Derivation queued.
+
+[2026-09-30 12:19:32] SUCCESS (DAEMON_QUEUE) | yt-archive-ye2ckoyqc-i | Derivation queued.
+
+[2026-09-30 12:19:35] SUCCESS (DAEMON_QUEUE) | yt-archive-ucochrghheg | Derivation queued.
+
+[2026-09-30 12:19:38] SUCCESS (DAEMON_QUEUE) | yt-archive-3a-l75mjjao | Derivation queued.
+
+[2026-09-30 12:19:41] SUCCESS (DAEMON_QUEUE) | yt-archive-wgthpwprr-i | Derivation queued.
+
+[2026-09-30 12:30:05] SUCCESS (DAEMON_QUEUE) | yt-archive-vsrjyqk2044 | Derivation queued.
+
+[2026-09-30 12:30:08] SUCCESS (DAEMON_QUEUE) | yt-archive-asipxmhejno | Derivation queued.
+
+[2026-09-30 12:30:11] SUCCESS (DAEMON_QUEUE) | yt-archive-cx3bxphfojy | Derivation queued.
+
+[2026-09-30 12:50:36] SUCCESS (DAEMON_QUEUE) | yt-archive-hhtcobh3tli | Derivation queued.
+
+[2026-09-30 12:50:38] SUCCESS (DAEMON_QUEUE) | yt-archive-o9hykewaoxq | Derivation queued.
+
+[2026-09-30 12:50:41] SUCCESS (DAEMON_QUEUE) | yt-archive-lxfz6xxxlvw | Derivation queued.
+

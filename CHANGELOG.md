@@ -3,6 +3,8 @@
 All notable changes to **The Archiver**, extracted directly from the official GitHub repository (`BaDoingleZoinks/Archiver`) commit history.
 
 ## [1.8.2] - Latest
+### Changed
+- --prompt
 ### Added
 - Added RapidArchive mode to speed up archival through deferred derivation. Added manual and automatic derivation (initial implementation). Increased wikipedia URL fetching. Miscellaneous improvements.
 

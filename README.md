@@ -150,7 +150,7 @@ Though the tools let you bulk edit tags manually quite easily, a powerful featur
 NEW: with the addition of the Rapid Upload mode, you can archive videos much faster, but you will need to initiate the derivation process yourself. There are two ways:
 - The manual way is done by selecting all rows in the table marked as Needs Derive and clicking Queue Derivation for Selected. Upon confirmation from the Archive, it will initiate the derivation process for the selected videos in the background; no action necessary.
   - **NOTE**: the derivation process can take a few minutes, during which you won't be able to edit metadata tags. You will get a popup warning you about this if you try to do it. Wait a while before editing tags. 
-- The automatic way unlocks true AFK mass archiving. Check the box for Enable Auto-Derivation Engine and set a timer on the Sweep Every (min) field (e.g. 5 or 10 minutes, as derivation takes a moment). The tool will automatically select all videos in need of derivation and send a bulk request to the Archive servers, so you don't have to do it manually.
+- The automatic way unlocks true AFK mass archiving. Check the box for Enable Auto-Derivation Engine and set a timer on the Sweep Every (min) field (e.g. 5 - 10 minutes, as derivation takes a moment). The tool will automatically select all videos in need of derivation and send a bulk request to the Archive servers, so you don't have to do it manually.
 - Click Open Log to view a log of the metadata editing requests. 	
 
 
