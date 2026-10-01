@@ -2,7 +2,11 @@
 
 All notable changes to **The Archiver**, extracted directly from the official GitHub repository (`BaDoingleZoinks/Archiver`) commit history.
 
-## [1.8.2] - Latest
+## [2.0.0] - Latest
+### Added
+- Added RapidArchive mode, lowering wait time massively by deferring derivation. Added manual and automatic derivation commands. Added progress tracker for channel or playlist. Miscellaneous tweaks.
+
+## [1.8.2]
 ### Changed
 - --prompt
 ### Added
