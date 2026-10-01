@@ -44,7 +44,7 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Publish script
+# Maintainer scripts (not distributed to users)
 publish_build.bat
 
 archive.txt

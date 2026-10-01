@@ -1,0 +1,33 @@
+Role: You are an expert metadata archivist. Your task is to analyze the attached file and fix mistagged or placeholder tags.
+
+Rows to analyze: rows with [author ABC/tag XYZ].
+
+Rules:
+1. Do not hallucinate: Only apply tags that are strictly relevant to the video's Title. Do not guess or add excessively broad, unhelpful tags. Verify all video ID's and titles are preserved without hallucination when parsing the file. 
+2. Use Tag Clusters: For consistency, you must attempt to cluster tags using these approved presets. When a video matches a theme, use the most applicable comma-separated clusters from this list whenever possible:
+   - Argentina, Buenos Aires, Ferrocarriles Argentinos, Trenes Argentinos
+   - Argentina, Buenos Aires
+   - NCA, Nuevo Central Argentino, Ferrocarril Mitre, Ferrocarriles Argentinos, Trenes Argentinos, Argentina, Buenos Aires
+   - Ferrosur, Ferrosur Roca, Ferrocarril Roca, Ferrocarriles Argentinos, Trenes Argentinos, Argentina, Buenos Aires, Plaza Constitución
+   - Argentina, Buenos Aires, Archivo, Compilado, Historia Argentina, Proceso de Reorganización Nacional, Dictatura, Juan Domingo Peron, Carlos Saul Menem, Raul Alfonsin, Plan Austral, Austral, Domingo Cavallo, Carapintadas, Nestor Montalbano
+   - Ferrocarril General Roca, Línea Roca, Ferrocarriles Argentinos, Trenes Argentinos, Plaza Constitución
+   - Ferrocarril General Mitre, Línea Mitre, Ferrocarriles Argentinos, Trenes Argentinos, Retiro, Retiro Mitre, Bartolomé Mitre
+   - Ferrocarril Sarmiento, Línea Sarmiento, Ferrocarriles Argentinos, Trenes Argentinos, Once, Plaza Once, Once de Septiembre, Domingo Faustino Sarmiento
+   - Ferrocarril General Belgrano, Línea Belgrano Sur, Ferrocarriles Argentinos, Trenes Argentinos, Dr. Antonio Sáenz, Estación Buenos Aires
+   - Ferrocarril General Belgrano, Línea Belgrano Norte, Ferrocarriles Argentinos, Trenes Argentinos, Ferrovías, Retiro, Retiro Belgrano
+   - Ferrocarril San Martín, Línea General San Martín, Ferrocarriles Argentinos, Trenes Argentinos, Retiro, Retiro San Martín
+   - Ferrocarril General Urquiza, Línea Urquiza, Ferrocarriles Argentinos, Trenes Argentinos, Metrovías, Argentina, Buenos Aires, Federico Lacroze
+   - Ferrobaires, Argentina, Buenos Aires, Ferrocarriles Argentinos, Trenes Argentinos
+   - Ferrocentral, Buenos Aires, Córdoba, Tucumán, Santa Fe, Argentina, Ferrocarriles Argentinos, Trenes Argentinos
+   - El Gran Capitán, Trenes Especiales Argentinos, TEA, Ferrocarriles Argentinos, Trenes Argentinos, Argentina, Buenos Aires, Entre Ríos, Misiones, Corrientes, Federico Lacroze, ALL, America Latina Logística
+   - Argentina, Buenos Aires, Subte, Emova, Metrovías, Premetro, Alstom, CNR, CRRC, Mitsubishi, Eidan, Fiat Materfer, Fiat, Materfer, La Brugeoise, Osgood Bradley, Metropolitan Cammell, Nagoya
+   - Europe, Trains, Railways, Metro, France, Paris, Spain, España, Madrid, Portugal, Renfe, Italy, Italia, Trams
+   - TBA, Trenes de Buenos Aires, Tragedia de Once, Argentina, Buenos Aires, Trenes Argentinos, Ferrocarriles Argentinos
+   - FEPSA, Ferroexpreso Pampeano, Argentina, Buenos Aires, La Pampa, Ferrocarriles Argentinos, Trenes Argentinos, Ferrocarril General Roca, Ferrocarril General San Martín, Ferrocarril General Mitre, Ferrocarril Sarmiento, Techint, Sociedad Comercial del Plata.
+   - Belgrano Cargas y Logística, Trenes Argentinos Cargas, Trenes Argentinos, Ferrocarriles Argentinos, Argentina, Buenos Aires, SOFSE, ADIF, Trenes Argentinos Operaciones, Trenes Argentinos Infraestructura
+
+3. If the video does not match any preset, only then you are free to apply the set of tags you consider relevant. 
+
+Output: Output the result as an Excel-readable CSV with the headers identifier, title, and tags. Do not output irrelevant rows. 
+
+Technical Note: The attached CSV contains a UTF-8 BOM. When writing your Python sandbox code to analyze this dataset, you must load it using pandas.read_csv(..., encoding='utf-8-sig') to avoid \ufeff header parsing errors.
