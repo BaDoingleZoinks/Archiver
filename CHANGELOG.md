@@ -2,7 +2,11 @@
 
 All notable changes to **The Archiver**, extracted directly from the official GitHub repository (`BaDoingleZoinks/Archiver`) commit history.
 
-## [2.0.0] - Latest
+## [2.1.0] - Latest
+### Added
+- Added button to check IA server status.
+
+## [2.0.0]
 ### Added
 - Added RapidArchive mode, lowering wait time massively by deferring derivation. Added manual and automatic derivation commands. Added progress tracker for channel or playlist. Miscellaneous tweaks.
 

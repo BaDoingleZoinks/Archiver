@@ -93,7 +93,7 @@ NEW: Rapid Upload Mode:
   - This is where your tag presets and other settings are saved. 
   
 
-On the top bar you can toggle Dark Mode to not flashbang yourself in the dark.   
+On the top bar you can toggle Dark Mode to not flashbang yourself in the dark. You will also see a button to check the status of IA servers. Click it to ping the site.
   
 
 Click on Start Archiving and you will see the activity log populate. The tool will scan the channel or playlist, download a video, parse its metadata, and upload it with your selected tags to your Internet Archive. It will then download the next video, wait for the configured delay, and upload it. The tool skips any video previously recorded on your selected ledger file to avoid duplicate uploads. 
