@@ -18,7 +18,7 @@ import internetarchive as ia
 import unicodedata
 from datetime import datetime, timezone
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse, urljoin, urlunparse
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
 APP_VERSION = "2.1.2"
@@ -111,6 +111,8 @@ class ArchiveApp:
                     self.meta_tags_combo['values'] = self.tags_presets
                 self.url_combo.set(s.get("url", ""))
                 self.tags_combo.set(s.get("tags", ""))
+                if hasattr(self, 'content_type_var'):
+                    self.content_type_var.set(s.get("content_type", "All / Default"))
                 self.res_var.set(s.get("max_resolution", "1080p (Recommended)"))
                 self.lang_var.set(s.get("language", "None"))
                 self.cookies_var.set(s.get("cookies_browser", ""))
@@ -134,6 +136,7 @@ class ArchiveApp:
             except Exception:
                 pass
         self.toggle_dark_mode()
+        self.check_url_type()
 
     def save_settings(self):
         s = {
@@ -144,6 +147,7 @@ class ArchiveApp:
             "ledger_presets": getattr(self, "ledger_presets", {"Main Archive": "archive.txt"}),
             "url": self.url_combo.get(),
             "url_presets": self.url_presets,
+            "content_type": self.content_type_var.get() if hasattr(self, 'content_type_var') else "All / Default",
             "tags": self.tags_combo.get(),
             "tags_presets": self.tags_presets,
             "max_resolution": self.res_var.get(),
@@ -216,12 +220,13 @@ class ArchiveApp:
             self.url_presets.remove(val)
             self.url_combo.config(values=self.url_presets)
             self.url_combo.set("")
+            self.check_url_type()
             self.save_settings()
 
     def rename_url_preset(self):
         val = self.url_combo.get().strip()
         if val in self.url_presets:
-            match = re.search(r'\((https?://[^\)]+)\)', val)
+            match = re.search(r'\(([^)]+)\)\s*$', val)
             if not match:
                 messagebox.showwarning("Warning", "Cannot rename a preset without a URL in parentheses.")
                 return
@@ -234,6 +239,7 @@ class ArchiveApp:
                 self.url_presets[idx] = new_preset
                 self.url_combo.config(values=self.url_presets)
                 self.url_combo.set(new_preset)
+                self.check_url_type()
                 self.save_settings()
 
     def delete_tags_preset(self):
@@ -259,6 +265,19 @@ class ArchiveApp:
             if hasattr(self, 'log_area'):
                 self.log_area.config(bg="#ffffff", fg="#000000", insertbackground="#000000")
                 self.history_area.config(bg="#ffffff", fg="#000000", insertbackground="#000000")
+
+    def check_url_type(self, event=None):
+        if not hasattr(self, 'url_combo') or not hasattr(self, 'content_type_combo'):
+            return
+        url = self.url_combo.get().strip()
+        match = re.search(r'\(([^)]+)\)\s*$', url)
+        check_url = match.group(1) if match else url
+        
+        if "playlist?list=" in check_url or "watch?v=" in check_url or "youtu.be/" in check_url:
+            self.content_type_combo.set("All / Default")
+            self.content_type_combo.config(state=tk.DISABLED)
+        else:
+            self.content_type_combo.config(state="readonly")
 
     def check_ia_status(self):
         if hasattr(self, 'ia_status_btn'):
@@ -344,6 +363,9 @@ class ArchiveApp:
         url_frame.grid(row=0, column=1, sticky=tk.EW, padx=5, pady=5)
         self.url_combo = ttk.Combobox(url_frame)
         self.url_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.url_combo.bind("<KeyRelease>", self.check_url_type)
+        self.url_combo.bind("<<ComboboxSelected>>", self.check_url_type)
+        
         self.save_url_btn = ttk.Button(url_frame, text="Save Preset", command=self.save_url_preset)
         self.save_url_btn.pack(side=tk.LEFT, padx=(5, 0))
         self.rename_url_btn = ttk.Button(url_frame, text="Rename", width=8, command=self.rename_url_preset)
@@ -351,10 +373,23 @@ class ArchiveApp:
         self.del_url_btn = ttk.Button(url_frame, text="Delete", width=8, command=self.delete_url_preset)
         self.del_url_btn.pack(side=tk.LEFT, padx=(5, 0))
         
+        # Content Type
+        ttk.Label(input_frame, text="Content Type (Channel only):").grid(row=1, column=0, sticky=tk.W, pady=5)
+        type_frame = ttk.Frame(input_frame)
+        type_frame.grid(row=1, column=1, sticky=tk.EW, padx=5, pady=5)
+        self.content_type_var = tk.StringVar(value="All / Default")
+        self.content_type_combo = ttk.Combobox(
+            type_frame,
+            textvariable=self.content_type_var,
+            values=["All / Default", "Videos", "Live", "Shorts"],
+            state="readonly"
+        )
+        self.content_type_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
         # Tags
-        ttk.Label(input_frame, text="Custom Tags (comma-separated):").grid(row=1, column=0, sticky=tk.W, pady=5)
+        ttk.Label(input_frame, text="Custom Tags (comma-separated):").grid(row=2, column=0, sticky=tk.W, pady=5)
         tags_frame = ttk.Frame(input_frame)
-        tags_frame.grid(row=1, column=1, sticky=tk.EW, padx=5, pady=5)
+        tags_frame.grid(row=2, column=1, sticky=tk.EW, padx=5, pady=5)
         self.tags_combo = ttk.Combobox(tags_frame)
         self.tags_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.save_tags_btn = ttk.Button(tags_frame, text="Save Preset", command=self.save_tags_preset)
@@ -363,7 +398,7 @@ class ArchiveApp:
         self.del_tags_btn.pack(side=tk.LEFT, padx=(5, 0))
         
         # Max Resolution
-        ttk.Label(input_frame, text="Max Resolution:").grid(row=2, column=0, sticky=tk.W, pady=5)
+        ttk.Label(input_frame, text="Max Resolution:").grid(row=3, column=0, sticky=tk.W, pady=5)
         self.res_var = tk.StringVar(value="1080p (Recommended)")
         self.res_combo = ttk.Combobox(
             input_frame, 
@@ -372,10 +407,10 @@ class ArchiveApp:
             state="readonly",
             width=30
         )
-        self.res_combo.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
+        self.res_combo.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
         
         # Language
-        ttk.Label(input_frame, text="Metadata Language:").grid(row=3, column=0, sticky=tk.W, pady=5)
+        ttk.Label(input_frame, text="Metadata Language:").grid(row=4, column=0, sticky=tk.W, pady=5)
         self.lang_var = tk.StringVar(value="None")
         self.lang_combo = ttk.Combobox(
             input_frame, 
@@ -384,12 +419,12 @@ class ArchiveApp:
             state="readonly",
             width=30
         )
-        self.lang_combo.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
+        self.lang_combo.grid(row=4, column=1, sticky=tk.W, padx=5, pady=5)
         
         # Browser Cookies / cookies.txt
-        ttk.Label(input_frame, text="Cookies (Browser or .txt):").grid(row=4, column=0, sticky=tk.W, pady=5)
+        ttk.Label(input_frame, text="Cookies (Browser or .txt):").grid(row=5, column=0, sticky=tk.W, pady=5)
         cookies_frame = ttk.Frame(input_frame)
-        cookies_frame.grid(row=4, column=1, sticky=tk.EW, padx=5, pady=5)
+        cookies_frame.grid(row=5, column=1, sticky=tk.EW, padx=5, pady=5)
         self.cookies_var = tk.StringVar(value="")
         self.cookies_entry = ttk.Entry(cookies_frame, textvariable=self.cookies_var)
         self.cookies_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
@@ -397,9 +432,9 @@ class ArchiveApp:
         self.cookies_browse_btn.pack(side=tk.LEFT, padx=(5, 0))
 
         # Upload Delays Frame
-        ttk.Label(input_frame, text="Rate Limit Delays:").grid(row=5, column=0, sticky=tk.W, pady=5)
+        ttk.Label(input_frame, text="Rate Limit Delays:").grid(row=6, column=0, sticky=tk.W, pady=5)
         delays_frame = ttk.Frame(input_frame)
-        delays_frame.grid(row=5, column=1, sticky=tk.EW, padx=5, pady=5)
+        delays_frame.grid(row=6, column=1, sticky=tk.EW, padx=5, pady=5)
         
         ttk.Label(delays_frame, text="Normal Mode (min):").pack(side=tk.LEFT, padx=(0, 5))
         self.delay_var = tk.IntVar(value=20)
@@ -412,9 +447,9 @@ class ArchiveApp:
         self.rapid_delay_spin.pack(side=tk.LEFT)
         
         # Download Directory
-        ttk.Label(input_frame, text="Download Directory:").grid(row=6, column=0, sticky=tk.W, pady=5)
+        ttk.Label(input_frame, text="Download Directory:").grid(row=7, column=0, sticky=tk.W, pady=5)
         dir_frame = ttk.Frame(input_frame)
-        dir_frame.grid(row=6, column=1, sticky=tk.EW, padx=5, pady=5)
+        dir_frame.grid(row=7, column=1, sticky=tk.EW, padx=5, pady=5)
         
         self.dir_var = tk.StringVar(value=os.path.abspath("."))
         self.dir_entry = ttk.Entry(dir_frame, textvariable=self.dir_var)
@@ -424,9 +459,9 @@ class ArchiveApp:
         self.browse_btn.pack(side=tk.LEFT, padx=(5, 0))
         
         # Archive Ledger Row (Friendly Name + Path)
-        ttk.Label(input_frame, text="Active Ledger:").grid(row=7, column=0, sticky=tk.NW, pady=5)
+        ttk.Label(input_frame, text="Active Ledger:").grid(row=8, column=0, sticky=tk.NW, pady=5)
         ledger_frame = ttk.Frame(input_frame)
-        ledger_frame.grid(row=7, column=1, sticky=tk.EW, padx=5, pady=5)
+        ledger_frame.grid(row=8, column=1, sticky=tk.EW, padx=5, pady=5)
         
         ledger_top_bar = ttk.Frame(ledger_frame)
         ledger_top_bar.pack(fill=tk.X)
@@ -452,7 +487,7 @@ class ArchiveApp:
 
         # Checkboxes Frame
         opts_frame = ttk.Frame(input_frame)
-        opts_frame.grid(row=8, column=1, sticky=tk.EW, padx=5, pady=5)
+        opts_frame.grid(row=9, column=1, sticky=tk.EW, padx=5, pady=5)
 
         self.rapid_mode_var = tk.BooleanVar(value=False)
         self.rapid_mode_chk = ttk.Checkbutton(opts_frame, text="Rapid Upload Mode (Skip IA derivation; remember to queue with Metadata Editor)", variable=self.rapid_mode_var)
@@ -863,12 +898,30 @@ class ArchiveApp:
             return
             
         # If it's a preset "Title (URL)", extract the URL
-        match = re.search(r'\((https?://[^\)]+)\)', raw_url)
+        match = re.search(r'\(([^)]+)\)\s*$', raw_url)
         url = match.group(1) if match else raw_url
             
         self.start_btn.config(state=tk.DISABLED)
         self.pause_btn.config(text="Pause", state=tk.NORMAL)
         self.stop_btn.config(state=tk.NORMAL)
+
+        # Handle Content Type suffix
+        content_type = getattr(self, 'content_type_var', tk.StringVar(value="All / Default")).get()
+        if content_type in ["Videos", "Live", "Shorts"]:
+            # Check if it's a playlist or watch URL
+            if not ("playlist?list=" in url or "watch?v=" in url or "youtu.be/" in url):
+                # Remove existing tab if present, handling query parameters safely
+                parsed = urlparse(url)
+                path = re.sub(r'/(videos|shorts|streams|live)$', '', parsed.path, flags=re.IGNORECASE).rstrip('/')
+                
+                if content_type == "Videos":
+                    path += "/videos"
+                elif content_type == "Live":
+                    path += "/streams"
+                elif content_type == "Shorts":
+                    path += "/shorts"
+                    
+                url = urlunparse(parsed._replace(path=path))
 
         # Lock ledger controls while pipeline is active
         self.ledger_combo.config(state="disabled")
@@ -900,16 +953,60 @@ class ArchiveApp:
             if match:
                 lang_code = match.group(1)
         
-        mode_str = "RAPID" if rapid_mode else "NORMAL"
-        self.log(f"=== Archival Pipeline Started [{mode_str} MODE] (Max Resolution: {selected_res}) ===")
-        self.log(f"Active Ledger: '{active_ledger_name}' ({os.path.basename(active_ledger_path)})")
-        self.worker_thread = threading.Thread(
-            target=self.run_pipeline, 
-            args=(url, self.tags_combo.get().strip(), selected_res, base_dir, keep_files, prevent_sleep, delay_minutes, lang_code, reverse_playlist, active_ledger_path, active_ledger_name, rapid_mode), 
-            daemon=True
-        )
-        self.worker_thread.start()
-        
+        def _precheck_and_run():
+            self.log(f"Checking URL for items: {url} ...")
+            cmd = [self.get_executable("yt-dlp"), "--flat-playlist", "--print", "%(id)s", "--playlist-items", "1", url]
+            cookies_input = self.cookies_var.get().strip()
+            if cookies_input:
+                if os.path.isfile(cookies_input) or cookies_input.lower().endswith(".txt"):
+                    cmd.extend(["--cookies", cookies_input])
+                else:
+                    cmd.extend(["--cookies-from-browser", cookies_input.lower()])
+            try:
+                self.current_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                stdout, stderr = self.current_process.communicate()
+                self.current_process = None
+                
+                if not stdout.strip() and not self.stop_event.is_set():
+                    # Empty or error
+                    self.log(f"[WARNING] yt-dlp found no items in {content_type} tab. Aborting.")
+                    if stderr.strip():
+                        self.log(f"[yt-dlp Error] {stderr.strip()}")
+                    self.root.after(0, lambda: messagebox.showwarning("Empty Tab", f"No videos found in the selected {content_type} tab.\nArchive engine will not start."))
+                    self.root.after(0, self.stop_archiving)
+                    self.root.after(0, lambda: self.start_btn.config(state=tk.NORMAL))
+                    self.root.after(0, lambda: self.ledger_combo.config(state="readonly"))
+                    self.root.after(0, lambda: self.rename_ledger_btn.config(state=tk.NORMAL))
+                    self.root.after(0, lambda: self.delete_ledger_btn.config(state=tk.NORMAL))
+                    self.root.after(0, lambda: self.choose_ledger_btn.config(state=tk.NORMAL))
+                    self.root.after(0, lambda: self.new_ledger_btn.config(state=tk.NORMAL))
+                    return
+            except Exception as e:
+                self.log(f"Pre-check error: {e}")
+                self.current_process = None
+                
+            if self.stop_event.is_set():
+                self.root.after(0, lambda: self.start_btn.config(state=tk.NORMAL))
+                self.root.after(0, lambda: self.ledger_combo.config(state="readonly"))
+                self.root.after(0, lambda: self.rename_ledger_btn.config(state=tk.NORMAL))
+                self.root.after(0, lambda: self.delete_ledger_btn.config(state=tk.NORMAL))
+                self.root.after(0, lambda: self.choose_ledger_btn.config(state=tk.NORMAL))
+                self.root.after(0, lambda: self.new_ledger_btn.config(state=tk.NORMAL))
+                return
+                
+            mode_str = "RAPID" if rapid_mode else "NORMAL"
+            self.root.after(0, lambda: self.log(f"=== Archival Pipeline Started [{mode_str} MODE] (Max Resolution: {selected_res}) ==="))
+            self.root.after(0, lambda: self.log(f"Active Ledger: '{active_ledger_name}' ({os.path.basename(active_ledger_path)})"))
+            self.worker_thread = threading.Thread(
+                target=self.run_pipeline, 
+                args=(url, self.tags_combo.get().strip(), selected_res, base_dir, keep_files, prevent_sleep, delay_minutes, lang_code, reverse_playlist, active_ledger_path, active_ledger_name, rapid_mode, content_type), 
+                daemon=True
+            )
+            self.worker_thread.start()
+
+        # Run precheck thread
+        threading.Thread(target=_precheck_and_run, daemon=True).start()
+
     def stop_archiving(self):
         self.log("\n=== Stop Requested ===")
         self.log("Terminating current tasks and stopping pipeline...")
@@ -1268,7 +1365,7 @@ class ArchiveApp:
                 time.sleep(0.5)
         return not self.stop_event.is_set()
         
-    def run_pipeline(self, url, tags_str, max_resolution, base_dir, keep_files, prevent_sleep, delay_minutes, lang_code, reverse_playlist, active_ledger_path=None, active_ledger_name="Main Archive", rapid_mode=False):
+    def run_pipeline(self, url, tags_str, max_resolution, base_dir, keep_files, prevent_sleep, delay_minutes, lang_code, reverse_playlist, active_ledger_path=None, active_ledger_name="Main Archive", rapid_mode=False, content_type_label="All / Default"):
         try:
             if not active_ledger_path:
                 active_ledger_path = self.get_ledger_path()
@@ -1370,7 +1467,10 @@ class ArchiveApp:
                         if progress_match:
                             current, total = progress_match.groups()
                             if hasattr(self, 'progress_label'):
-                                self.root.after(0, lambda c=current, t=total: self.progress_label.config(text=f"{c}/{t} for channel/playlist"))
+                                label_text = f"{current}/{total} for channel/playlist"
+                                if content_type_label and content_type_label != "All / Default":
+                                    label_text += f" ({content_type_label})"
+                                self.root.after(0, lambda txt=label_text: self.progress_label.config(text=txt))
                         
                         line_lower = line_clean.lower()
                         if "could not copy" in line_lower and "cookie database" in line_lower:
@@ -4089,3 +4189,4 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = ArchiveApp(root)
     root.mainloop()
+
