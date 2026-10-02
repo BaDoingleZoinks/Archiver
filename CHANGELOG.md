@@ -2,7 +2,11 @@
 
 All notable changes to **The Archiver**, extracted directly from the official GitHub repository (`BaDoingleZoinks/Archiver`) commit history.
 
-## [2.1.2] - Latest
+## [2.2.0] - Latest
+### Added
+- Added ability to archive shorts and live tabs. Only enabled when URL is a channel (not a playlist)
+
+## [2.1.2]
 ### Changed
 - Testing improved rollback feature.
 
