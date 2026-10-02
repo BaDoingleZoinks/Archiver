@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.1.1"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -75,6 +75,7 @@ class ArchiveApp:
         threading.Thread(target=self.check_updates_background, daemon=True).start()
         self.root.after(1000, self.check_ia_credentials_startup)
         self.root.after(2000, self._periodic_remote_sync)
+        self.root.after(3000, self.check_ia_status)
 
     def load_settings(self):
         self.url_presets = []
@@ -259,6 +260,32 @@ class ArchiveApp:
                 self.log_area.config(bg="#ffffff", fg="#000000", insertbackground="#000000")
                 self.history_area.config(bg="#ffffff", fg="#000000", insertbackground="#000000")
 
+    def check_ia_status(self):
+        if hasattr(self, 'ia_status_btn'):
+            self.ia_status_btn.config(text="🌐 Checking IA...")
+            
+        def _worker():
+            try:
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) The Archiver/2.0.0'}
+                resp = requests.get('https://archive.org/', headers=headers, timeout=5)
+                if resp.status_code == 200:
+                    status_text = "🌐 IA Status: Online"
+                else:
+                    status_text = f"🌐 IA Status: {resp.status_code}"
+            except Exception:
+                status_text = "🌐 IA Status: Offline"
+            
+            def _update():
+                if hasattr(self, 'ia_status_btn'):
+                    self.ia_status_btn.config(text=status_text)
+                if hasattr(self, '_ia_status_job'):
+                    self.root.after_cancel(self._ia_status_job)
+                self._ia_status_job = self.root.after(300000, self.check_ia_status)
+            
+            self.root.after(0, _update)
+            
+        threading.Thread(target=_worker, daemon=True).start()
+
     def on_close(self):
         self.save_settings()
         self.stop_event.set()
@@ -286,6 +313,9 @@ class ArchiveApp:
         self.dark_mode_var = tk.BooleanVar(value=False)
         self.dark_mode_chk = ttk.Checkbutton(header_bar, text="🌙 Dark Mode", variable=self.dark_mode_var, style="Switch.TCheckbutton", command=self.toggle_dark_mode)
         self.dark_mode_chk.pack(side=tk.RIGHT, padx=(0, 6))
+
+        self.ia_status_btn = ttk.Button(header_bar, text="🌐 IA Status: Unknown", command=self.check_ia_status)
+        self.ia_status_btn.pack(side=tk.RIGHT, padx=(0, 6))
 
         self.main_notebook = ttk.Notebook(self.root)
         self.main_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)

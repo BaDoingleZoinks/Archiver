@@ -2,7 +2,11 @@
 
 All notable changes to **The Archiver**, extracted directly from the official GitHub repository (`BaDoingleZoinks/Archiver`) commit history.
 
-## [2.1.0] - Latest
+## [2.1.1] - Latest
+### Fixed
+- Fixed Antigravity fuckup. lol.
+
+## [2.1.0]
 ### Added
 - Added button to check IA server status.
 
