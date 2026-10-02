@@ -881,3 +881,172 @@
 
 [2026-10-01 23:10:23] SUCCESS (DAEMON_QUEUE) | yt-archive-vhssau1gplq | Derivation queued.
 
+[2026-10-01 23:15:09] SUCCESS | yt-archive-x3ffb8bem8s | TREN DEL BAJO | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'la 2 de argenvia'] -> ['Tren de la Costa', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Vicente López', 'San Isidro', 'San Fernando', 'Tigre', 'Provincia de Buenos Aires', 'Sociedad Comercial del Plata']
+
+[2026-10-01 23:15:14] SUCCESS | yt-archive-h1c59dnt2pm | TREN DE LA COSTA Y LINEA  TIGRE | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'la 2 de argenvia'] -> ['Tren de la Costa', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Vicente López', 'San Isidro', 'San Fernando', 'Tigre', 'Provincia de Buenos Aires', 'Sociedad Comercial del Plata']
+
+[2026-10-01 23:15:18] SUCCESS | yt-archive-mpc3tkmvgca | TREN DE LA COSTA O TREN DEL BAJO | Tags: ['Argentina', 'Buenos Aires', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'la 2 de argenvia'] -> ['Tren de la Costa', 'Ferrocarriles Argentinos', 'Trenes Argentinos', 'Argentina', 'Buenos Aires', 'Vicente López', 'San Isidro', 'San Fernando', 'Tigre', 'Provincia de Buenos Aires', 'Sociedad Comercial del Plata']
+
+[2026-10-01 23:26:28] SUCCESS (DAEMON_QUEUE) | yt-archive-tpnxsuj2th8 | Derivation queued.
+
+[2026-10-01 23:26:31] SUCCESS (DAEMON_QUEUE) | yt-archive-gkwkkm3s2ik | Derivation queued.
+
+[2026-10-01 23:26:34] SUCCESS (DAEMON_QUEUE) | yt-archive-wcry6dk1zu8 | Derivation queued.
+
+[2026-10-01 23:41:47] SUCCESS (DAEMON_QUEUE) | yt-archive-lh1xsdblwrm | Derivation queued.
+
+[2026-10-01 23:41:49] SUCCESS (DAEMON_QUEUE) | yt-archive-oydhgxt59ww | Derivation queued.
+
+[2026-10-01 23:41:52] SUCCESS (DAEMON_QUEUE) | yt-archive-w-ns9n-a030 | Derivation queued.
+
+[2026-10-01 23:57:03] SUCCESS (DAEMON_QUEUE) | yt-archive-wgnlxfpto88 | Derivation queued.
+
+[2026-10-01 23:57:05] SUCCESS (DAEMON_QUEUE) | yt-archive-w3lped4yaqc | Derivation queued.
+
+[2026-10-01 23:57:08] SUCCESS (DAEMON_QUEUE) | yt-archive-gazi-csd-eu | Derivation queued.
+
+[2026-10-02 00:12:20] SUCCESS (DAEMON_QUEUE) | yt-archive-piht-pgqcpm | Derivation queued.
+
+[2026-10-02 00:12:23] SUCCESS (DAEMON_QUEUE) | yt-archive-u5ugkxizeys | Derivation queued.
+
+[2026-10-02 00:12:25] SUCCESS (DAEMON_QUEUE) | yt-archive-dt3t3ypy6fk | Derivation queued.
+
+[2026-10-02 00:27:36] SUCCESS (DAEMON_QUEUE) | yt-archive-i8nhdskqxso | Derivation queued.
+
+[2026-10-02 00:27:41] ERROR (DAEMON_QUEUE) | yt-archive-afctuthqp24 | Subprocess failed (Code 1): error: Unauthorized to edit item
+
+
+[2026-10-02 00:27:43] SUCCESS (DAEMON_QUEUE) | yt-archive-vvrfcp5zreq | Derivation queued.
+
+[2026-10-02 00:42:52] ERROR (DAEMON_QUEUE) | yt-archive-afctuthqp24 | Subprocess failed (Code 1): error: Unauthorized to edit item
+
+
+[2026-10-02 00:42:55] SUCCESS (DAEMON_QUEUE) | yt-archive-sqqzaq2rtis | Derivation queued.
+
+[2026-10-02 00:42:58] SUCCESS (DAEMON_QUEUE) | yt-archive-39hsr7sjzck | Derivation queued.
+
+[2026-10-02 00:43:00] SUCCESS (DAEMON_QUEUE) | yt-archive-pn-pcw42e38 | Derivation queued.
+
+[2026-10-02 00:58:11] ERROR (DAEMON_QUEUE) | yt-archive-afctuthqp24 | Subprocess failed (Code 1): error: Unauthorized to edit item
+
+
+[2026-10-02 00:58:13] SUCCESS (DAEMON_QUEUE) | yt-archive-fwjtybqh3-w | Derivation queued.
+
+[2026-10-02 00:58:16] SUCCESS (DAEMON_QUEUE) | yt-archive-fyxyn5lacfy | Derivation queued.
+
+[2026-10-02 00:58:18] SUCCESS (DAEMON_QUEUE) | yt-archive-i655mll5mw0 | Derivation queued.
+
+[2026-10-02 00:58:21] SUCCESS (DAEMON_QUEUE) | yt-archive-1ek4jowswxa | Derivation queued.
+
+[2026-10-02 01:13:34] ERROR (DAEMON_QUEUE) | yt-archive-afctuthqp24 | Subprocess failed (Code 1): error: Unauthorized to edit item
+
+
+[2026-10-02 01:13:36] SUCCESS (DAEMON_QUEUE) | yt-archive-wz1tpocwx8i | Derivation queued.
+
+[2026-10-02 01:13:39] SUCCESS (DAEMON_QUEUE) | yt-archive-5-88afsvrze | Derivation queued.
+
+[2026-10-02 01:13:42] SUCCESS (DAEMON_QUEUE) | yt-archive-ow-rhtlxeea | Derivation queued.
+
+[2026-10-02 01:28:52] ERROR (DAEMON_QUEUE) | yt-archive-afctuthqp24 | Subprocess failed (Code 1): error: Unauthorized to edit item
+
+
+[2026-10-02 01:28:55] SUCCESS (DAEMON_QUEUE) | yt-archive-mlcfvhjwprm | Derivation queued.
+
+[2026-10-02 01:28:57] SUCCESS (DAEMON_QUEUE) | yt-archive-7o4xumuoogm | Derivation queued.
+
+[2026-10-02 01:29:00] SUCCESS (DAEMON_QUEUE) | yt-archive-kfqmya5yo00 | Derivation queued.
+
+[2026-10-02 01:44:10] SUCCESS (DAEMON_QUEUE) | yt-archive-afctuthqp24 | Derivation queued.
+
+[2026-10-02 01:44:13] SUCCESS (DAEMON_QUEUE) | yt-archive-7o2sny-majo | Derivation queued.
+
+[2026-10-02 01:44:16] SUCCESS (DAEMON_QUEUE) | yt-archive-vwbad539g5s | Derivation queued.
+
+[2026-10-02 01:44:18] SUCCESS (DAEMON_QUEUE) | yt-archive-eem8qirlx-0 | Derivation queued.
+
+[2026-10-02 10:23:03] SUCCESS (DAEMON_QUEUE) | yt-archive-8scsf4fb67k | Derivation queued.
+
+[2026-10-02 10:23:06] SUCCESS (DAEMON_QUEUE) | yt-archive-aho-fn9hd-e | Derivation queued.
+
+[2026-10-02 10:23:09] SUCCESS (DAEMON_QUEUE) | yt-archive-f1ejqivub90 | Derivation queued.
+
+[2026-10-02 10:38:17] SUCCESS (DAEMON_QUEUE) | yt-archive-uuwpzqrxpag | Derivation queued.
+
+[2026-10-02 10:38:20] SUCCESS (DAEMON_QUEUE) | yt-archive-t2n5kjplxxq | Derivation queued.
+
+[2026-10-02 10:38:23] SUCCESS (DAEMON_QUEUE) | yt-archive-qmowoyingaa | Derivation queued.
+
+[2026-10-02 10:53:33] SUCCESS (DAEMON_QUEUE) | yt-archive-n1x1rnd0-m0 | Derivation queued.
+
+[2026-10-02 10:53:36] SUCCESS (DAEMON_QUEUE) | yt-archive-bkor-ceptti | Derivation queued.
+
+[2026-10-02 10:53:38] SUCCESS (DAEMON_QUEUE) | yt-archive-inrwwle9bns | Derivation queued.
+
+[2026-10-02 10:53:43] ERROR (DAEMON_QUEUE) | yt-archive-5eyvagdvlpm | Subprocess failed (Code 1): error: Unauthorized to edit item
+
+
+[2026-10-02 11:08:55] SUCCESS (DAEMON_QUEUE) | yt-archive-5eyvagdvlpm | Derivation queued.
+
+[2026-10-02 11:08:58] SUCCESS (DAEMON_QUEUE) | yt-archive-owcjboenqdc | Derivation queued.
+
+[2026-10-02 11:09:00] SUCCESS (DAEMON_QUEUE) | yt-archive-zze3npybxfe | Derivation queued.
+
+[2026-10-02 11:09:05] ERROR (DAEMON_QUEUE) | yt-archive-3m6wjc9ryzi | Subprocess failed (Code 1): error: Unauthorized to edit item
+
+
+[2026-10-02 11:24:18] SUCCESS (DAEMON_QUEUE) | yt-archive-3m6wjc9ryzi | Derivation queued.
+
+[2026-10-02 11:24:21] SUCCESS (DAEMON_QUEUE) | yt-archive-mpkvtfis5tq | Derivation queued.
+
+[2026-10-02 11:24:23] SUCCESS (DAEMON_QUEUE) | yt-archive-kjltlfsroxi | Derivation queued.
+
+[2026-10-02 11:24:26] SUCCESS (DAEMON_QUEUE) | yt-archive-cgjapsyiuxg | Derivation queued.
+
+[2026-10-02 11:39:37] SUCCESS (DAEMON_QUEUE) | yt-archive-fyhnqg7tzgg | Derivation queued.
+
+[2026-10-02 11:39:40] SUCCESS (DAEMON_QUEUE) | yt-archive-iujmt9f5lpe | Derivation queued.
+
+[2026-10-02 11:39:43] SUCCESS (DAEMON_QUEUE) | yt-archive-tj80rxcagu8 | Derivation queued.
+
+[2026-10-02 11:54:52] SUCCESS (DAEMON_QUEUE) | yt-archive-oulk8x8ck5k | Derivation queued.
+
+[2026-10-02 11:54:54] SUCCESS (DAEMON_QUEUE) | yt-archive-ajyw3thn88e | Derivation queued.
+
+[2026-10-02 11:54:57] SUCCESS (DAEMON_QUEUE) | yt-archive-rfz4c6xpg0g | Derivation queued.
+
+[2026-10-02 12:10:09] SUCCESS (DAEMON_QUEUE) | yt-archive-fwyvgah5k98 | Derivation queued.
+
+[2026-10-02 12:10:12] SUCCESS (DAEMON_QUEUE) | yt-archive-4l9c0idcelq | Derivation queued.
+
+[2026-10-02 12:10:15] SUCCESS (DAEMON_QUEUE) | yt-archive-xsv3eztnuq0 | Derivation queued.
+
+[2026-10-02 12:25:26] SUCCESS (DAEMON_QUEUE) | yt-archive-w1t-efkqf7y | Derivation queued.
+
+[2026-10-02 12:25:29] SUCCESS (DAEMON_QUEUE) | yt-archive-uhczhnqina4 | Derivation queued.
+
+[2026-10-02 12:25:31] SUCCESS (DAEMON_QUEUE) | yt-archive-ei04peqm-gq | Derivation queued.
+
+[2026-10-02 12:25:36] ERROR (DAEMON_QUEUE) | yt-archive-m7mamplmczg | Subprocess failed (Code 1): error: Unauthorized to edit item
+
+
+[2026-10-02 12:40:49] SUCCESS (DAEMON_QUEUE) | yt-archive-m7mamplmczg | Derivation queued.
+
+[2026-10-02 12:40:51] SUCCESS (DAEMON_QUEUE) | yt-archive-siga0vxesrm | Derivation queued.
+
+[2026-10-02 12:40:54] SUCCESS (DAEMON_QUEUE) | yt-archive-q3x-zdt2c8m | Derivation queued.
+
+[2026-10-02 12:40:59] ERROR (DAEMON_QUEUE) | yt-archive-tx7necnao6m | Subprocess failed (Code 1): error: Unauthorized to edit item
+
+
+[2026-10-02 12:56:10] SUCCESS (DAEMON_QUEUE) | yt-archive-tx7necnao6m | Derivation queued.
+
+[2026-10-02 12:56:12] SUCCESS (DAEMON_QUEUE) | yt-archive-mov8y-2a85g | Derivation queued.
+
+[2026-10-02 12:56:15] SUCCESS (DAEMON_QUEUE) | yt-archive-ly6ebz2zavc | Derivation queued.
+
+[2026-10-02 12:56:18] SUCCESS (DAEMON_QUEUE) | yt-archive-0-copeizgfy | Derivation queued.
+
+[2026-10-02 13:06:18] SUCCESS (DAEMON_QUEUE) | yt-archive-yxxby7yqskw | Derivation queued.
+
+[2026-10-02 13:06:20] SUCCESS (DAEMON_QUEUE) | yt-archive-m4jcquf8fs8 | Derivation queued.
+

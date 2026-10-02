@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin, urlunparse
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "2.2.0"
+APP_VERSION = "2.2.1"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -812,6 +812,7 @@ class ArchiveApp:
 
                 added_count = 0
                 updated_count = 0
+                search_vid_keys = set()
                 for item in s:
                     ident = item.get("identifier", "")
                     if not ident.lower().startswith("yt-archive-"):
@@ -821,6 +822,7 @@ class ArchiveApp:
                         continue
 
                     vid_key = re.sub(r'[^a-z0-9]', '', ia_vid.lower())
+                    search_vid_keys.add(vid_key)
                     raw_ledger = item.get("ledger", "")
                     if isinstance(raw_ledger, list):
                         raw_ledger = raw_ledger[0] if raw_ledger else ""
@@ -850,6 +852,18 @@ class ArchiveApp:
                         "ledger": ledger_tag
                     }
                     added_count += 1
+
+                self.root.after(0, lambda: self.history_status_lbl.config(text="Verifying local history..."))
+                missing_vids = [k for k in existing_entries.keys() if k not in search_vid_keys]
+                for i, vk in enumerate(missing_vids):
+                    if i % 10 == 0:
+                        self.root.after(0, lambda curr=i, tot=len(missing_vids): self.history_status_lbl.config(text=f"Verifying {curr}/{tot} unindexed history items..."))
+                    ident = f"yt-archive-{existing_entries[vk]['vid']}"
+                    try:
+                        if not ia.get_item(ident).exists:
+                            del existing_entries[vk]
+                    except Exception:
+                        pass
 
                 # Re-sort all history entries chronologically
                 sorted_entries = sorted(existing_entries.values(), key=lambda x: x["ts"])
@@ -3053,10 +3067,12 @@ class ArchiveApp:
                         if line.startswith("youtube "):
                             current_txt_ids.add(line.strip().split()[1])
                             
+            search_idents = set()
             for item in s:
                 ident = item.get("identifier", "")
                 if not ident:
                     continue
+                search_idents.add(ident)
                 title = item.get("title", "Unknown Title")
                 subj = item.get("subject", [])
                 if isinstance(subj, str):
@@ -3101,6 +3117,18 @@ class ArchiveApp:
                 count += 1
                 if count % 50 == 0:
                     self.root.after(0, lambda c=count, t=total: self.meta_sync_status_label.config(text=f"Fetched {c}/{t} items..."))
+
+            self.root.after(0, lambda: self.meta_sync_status_label.config(text="Verifying local cache items..."))
+            local_idents = list(self.metadata_cache.keys())
+            missing_idents = [ident for ident in local_idents if ident not in search_idents]
+            for i, ident in enumerate(missing_idents):
+                if i % 10 == 0:
+                    self.root.after(0, lambda curr=i, tot=len(missing_idents): self.meta_sync_status_label.config(text=f"Verifying {curr}/{tot} unindexed cache items..."))
+                try:
+                    if not ia.get_item(ident).exists:
+                        del self.metadata_cache[ident]
+                except Exception:
+                    pass
                     
             # Consolidate into local ledger
             if new_txt_entries:

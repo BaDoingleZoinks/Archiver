@@ -44,6 +44,9 @@ The first tab of the app to be developed. A walkthrough of each field:
   - Allows for naming and renaming of URLs for ease of use.
   - Can save URLs as presets to quickly switch between them.
 
+- Content type: allows you to select if you want to upload the main Videos tab, the Shorts tab, or the Live tab.
+  - Disabled if the URL is a playlist instead of a channel.
+
 - Custom tags (comma-separated):
   - Type the Internet Archive subjects tags to mark your content with, separated by commas.
   - Allows saving presets to quickly switch between them.
