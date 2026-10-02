@@ -2,19 +2,13 @@ import sys
 import re
 import os
 
-APP_FILE = 'yt_archive_app.py'
-CHANGELOG_FILE = 'CHANGELOG.md'
-
 def get_app_version():
-    """Reads APP_VERSION directly from the application source."""
-    if not os.path.exists(APP_FILE):
-        return "Unknown"
-    with open(APP_FILE, 'r', encoding='utf-8') as f:
+    with open('yt_archive_app.py', 'r', encoding='utf-8') as f:
         for line in f:
             if line.startswith('APP_VERSION ='):
-                match = re.search(r'APP_VERSION = ["\'](.+?)["\']', line)
+                match = re.search(r'APP_VERSION = ["\'](.+)["\']', line)
                 if match:
-                    return match.group(1).strip()
+                    return match.group(1)
     return "Unknown"
 
 def bump_version(current_version, bump_type):
@@ -63,158 +57,71 @@ def main():
 
     version = current_version
     
+    # Determine category
+    lower_msg = commit_msg.lower()
     category = "Changed"
-    if any(lower.startswith(k) for k in ["fix", "resolve", "patch", "bug", "revert"]):
+    if lower_msg.startswith("fix") or lower_msg.startswith("resolve") or lower_msg.startswith("patch"):
         category = "Fixed"
-    elif any(lower.startswith(k) for k in ["add", "feat", "new"]):
+    elif lower_msg.startswith("add") or lower_msg.startswith("feat") or lower_msg.startswith("new"):
         category = "Added"
-    elif any(lower.startswith(k) for k in ["remove", "delete", "deprecat"]):
+    elif lower_msg.startswith("remove") or lower_msg.startswith("delete"):
         category = "Removed"
-    elif any(lower.startswith(k) for k in ["perf", "refactor", "chore", "doc", "update"]):
-        category = "Changed"
 
-    formatted = clean[0].upper() + clean[1:]
-    if ":" in formatted:
-        parts = formatted.split(":", 1)
-        formatted = f"**{parts[0].strip()}**:{parts[1]}"
-    elif not formatted.startswith("**"):
-        words = formatted.split(" ", 1)
-        if len(words) == 2 and words[0].lower() in ["added", "fixed", "updated", "removed", "changed"]:
-            formatted = f"**{words[0]}**: {words[1]}"
-            
-    return category, formatted
+    # Format the message (capitalize first letter, ensure it ends with period)
+    formatted_msg = commit_msg[0].upper() + commit_msg[1:]
+    
+    # Simple bolding if there is a colon (e.g., "Feature: description" -> "**Feature**: description")
+    if ":" in formatted_msg:
+        parts = formatted_msg.split(":", 1)
+        formatted_msg = f"**{parts[0].strip()}**:{parts[1]}"
+    
+    new_entry = f"- {formatted_msg}\n"
 
-def update_changelog(version, category, formatted_entry):
-    """Updates CHANGELOG.md ensuring correct headers and categories."""
     try:
-        with open(CHANGELOG_FILE, 'r', encoding='utf-8') as f:
+        with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
             content = f.read()
     except FileNotFoundError:
-        content = "# Changelog\n\nAll notable changes to **The Archiver**.\n\n"
+        content = "# Changelog\n\n"
 
-    new_bullet = f"- {formatted_entry}\n" if formatted_entry else ""
     version_header = f"## [{version}]"
     
-    # Strip any existing "- Latest" markers across the file to ensure only top has it
-    content = re.sub(r'## \[([^\]]+)\] - Latest', r'## [\1]', content)
-
     if version_header in content:
-        # Version already exists in CHANGELOG.md; attach "- Latest" and append entry
-        pattern = re.compile(rf"({re.escape(version_header)})(.*?)(?=## \[|\Z)", re.DOTALL)
+        # Version exists, find the category or insert it
+        pattern = re.compile(rf"({re.escape(version_header)}.*?)(?=## \[|\Z)", re.DOTALL)
         match = pattern.search(content)
         if match:
-            v_head, section_body = match.group(1), match.group(2)
-            new_v_head = f"{version_header} - Latest"
+            section_content = match.group(1)
+            cat_header = f"### {category}"
             
-            if new_bullet:
-                cat_header = f"### {category}"
-                if cat_header in section_body:
-                    # Append directly beneath category header
-                    updated_body = section_body.replace(f"{cat_header}\n", f"{cat_header}\n{new_bullet}")
-                else:
-                    # Add category header at the start of section body
-                    updated_body = f"\n{cat_header}\n{new_bullet}" + section_body.lstrip('\n')
+            if cat_header in section_content:
+                # Append to existing category
+                updated_section = section_content.replace(f"{cat_header}\n", f"{cat_header}\n{new_entry}")
             else:
-                updated_body = section_body
-                
-            content = content[:match.start()] + new_v_head + updated_body + content[match.end():]
-    else:
-        # New version section needs to be created at the top
-        new_section = f"## [{version}] - Latest\n"
-        if new_bullet:
-            new_section += f"### {category}\n{new_bullet}\n"
-        else:
-            new_section += f"### Changed\n- Maintenance update.\n\n"
+                # Add new category
+                # Put it right after the version header
+                # Handle "- Latest" if present
+                lines = section_content.split('\n')
+                updated_section = lines[0] + f"\n{cat_header}\n{new_entry}" + '\n'.join(lines[1:])
             
-        first_header_idx = content.find("## [")
-        if first_header_idx != -1:
-            content = content[:first_header_idx] + new_section + "\n" + content[first_header_idx:]
-        else:
-            content += "\n" + new_section
-
-    # Clean up redundant empty lines
-    content = re.sub(r'\n{3,}', '\n\n', content)
-    
-    with open(CHANGELOG_FILE, 'w', encoding='utf-8') as f:
-        f.write(content)
-    print(f"[Success] Updated {CHANGELOG_FILE} for v{version}")
-
-def interactive_prompt(commit_msg):
-    """Runs interactive version selector before committing/publishing."""
-    current_ver = get_app_version()
-    patch_ver = calculate_bump(current_ver, 'patch')
-    minor_ver = calculate_bump(current_ver, 'minor')
-    major_ver = calculate_bump(current_ver, 'major')
-
-    print("\n" + "=" * 58)
-    print(f"        Release & Version Manager (Current: v{current_ver})")
-    print("=" * 58)
-    print(f"  [1] Patch bump   -> v{patch_ver} (Bug fixes, small enhancements)")
-    print(f"  [2] Minor bump   -> v{minor_ver} (New features, functionality)")
-    print(f"  [3] Major bump   -> v{major_ver} (Major architectural change)")
-    print(f"  [4] Keep current -> v{current_ver} (Sub-release / no version bump)")
-    print("  [5] Custom version string")
-    print("=" * 58)
-
-    try:
-        choice = input("Select version bump [1-5, default 4]: ").strip()
-    except EOFError:
-        choice = "4"
+            content = content[:match.start()] + updated_section + content[match.end():]
+    else:
+        # New version
+        # Remove "- Latest" from old latest version
+        content = content.replace(" - Latest", "")
         
-    if choice == "1":
-        target_ver = patch_ver
-    elif choice == "2":
-        target_ver = minor_ver
-    elif choice == "3":
-        target_ver = major_ver
-    elif choice == "5":
-        try:
-            target_ver = input("Enter custom version (e.g. 1.7.1): ").strip()
-        except EOFError:
-            target_ver = current_ver
-        if not target_ver:
-            target_ver = current_ver
-    else:
-        target_ver = current_ver
-
-    # Update app version if changed
-    if target_ver != current_ver:
-        set_app_version(target_ver)
-    else:
-        print(f"[Info] Keeping current version v{current_ver}")
-
-    # Add changelog entry
-    if commit_msg and commit_msg.lower() not in ["update build", "build", "publish"]:
-        category, formatted = categorize_and_format_message(commit_msg)
-        update_changelog(target_ver, category, formatted)
-    else:
-        update_changelog(target_ver, None, None)
-
-    return target_ver
-
-def main():
-    args = sys.argv[1:]
-    
-    if not args:
-        print("Usage: python auto_changelog.py [--prompt] <commit message>")
-        return
-
-    is_interactive = False
-    if "--prompt" in args:
-        is_interactive = True
-        args.remove("--prompt")
-
-    commit_msg = " ".join(args).strip() if args else ""
-
-    if is_interactive:
-        interactive_prompt(commit_msg)
-    else:
-        current_ver = get_app_version()
-        if commit_msg and commit_msg.lower() not in ["update build", "build", "publish"]:
-            category, formatted = categorize_and_format_message(commit_msg)
-            update_changelog(current_ver, category, formatted)
+        new_section = f"## [{version}] - Latest\n### {category}\n{new_entry}\n"
+        
+        # Insert after the main header
+        if "## [" in content:
+            first_header_idx = content.find("## [")
+            content = content[:first_header_idx] + new_section + content[first_header_idx:]
         else:
-            update_changelog(current_ver, None, None)
+            content += new_section
+
+    with open('CHANGELOG.md', 'w', encoding='utf-8') as f:
+        f.write(content)
+        
+    print(f"[Success] Added '{commit_msg}' to v{version} in CHANGELOG.md")
 
 if __name__ == "__main__":
     main()
