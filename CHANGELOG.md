@@ -2,7 +2,11 @@
 
 All notable changes to **The Archiver**, extracted directly from the official GitHub repository (`BaDoingleZoinks/Archiver`) commit history.
 
-## [2.1.1] - Latest
+## [2.1.2] - Latest
+### Changed
+- Testing improved rollback feature.
+
+## [2.1.1]
 ### Fixed
 - Fixed Antigravity fuckup. lol.
 

@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from tkinter import ttk, scrolledtext, messagebox, filedialog, simpledialog
 
-APP_VERSION = "2.1.1"
+APP_VERSION = "2.1.2"
 
 def normalize_title(text):
     """Normalizes titles by stripping accents, symbols, and whitespace for duplicate matching."""
@@ -3677,16 +3677,16 @@ class ArchiveApp:
 
         ttk.Label(status_frame, text=f"Installed Version: v{APP_VERSION} (Current)", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky=tk.W, pady=2)
 
-        backup_file = "yt_archive_app.py.bak"
-        backup_info = "No previous local backup found"
-        if os.path.exists(backup_file):
-            try:
-                mtime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(backup_file)))
-                sz = os.path.getsize(backup_file) // 1024
-                backup_info = f"Backup available: {mtime} ({sz} KB)"
-            except Exception:
-                backup_info = "Backup file exists"
-        backup_lbl = ttk.Label(status_frame, text=f"Local Rollback: {backup_info}", foreground="#007acc" if os.path.exists(backup_file) else "gray")
+        os.makedirs("local_builds", exist_ok=True)
+        backup_files = [f for f in os.listdir("local_builds") if f.endswith(".bak")]
+        if backup_files:
+            backup_info = f"{len(backup_files)} local builds available to restore"
+            backup_color = "#007acc"
+        else:
+            backup_info = "No previous local builds found"
+            backup_color = "gray"
+            
+        backup_lbl = ttk.Label(status_frame, text=f"Local Rollbacks: {backup_info}", foreground=backup_color)
         backup_lbl.grid(row=1, column=0, sticky=tk.W, pady=2)
 
         # 3. Target Version Selection Frame
@@ -3725,9 +3725,9 @@ class ArchiveApp:
             pass
         apply_btn.pack(side=tk.LEFT, padx=(0, 6))
 
-        rollback_btn = ttk.Button(btn_frame, text="⏪ Rollback to Local Backup")
+        rollback_btn = ttk.Button(btn_frame, text="⏪ Restore Local Build")
         rollback_btn.pack(side=tk.LEFT, padx=6)
-        if not os.path.exists(backup_file):
+        if not backup_files:
             rollback_btn.config(state=tk.DISABLED)
 
         close_btn = ttk.Button(btn_frame, text="Close", command=dialog.destroy)
@@ -3903,10 +3903,13 @@ class ArchiveApp:
                     raise Exception(f"Downloaded code has syntax errors: {se}")
 
                 # Backup current code
-                action_status_lbl.config(text="Creating local backup (yt_archive_app.py.bak)...")
+                action_status_lbl.config(text="Creating local backup in local_builds/...")
                 curr_file = "yt_archive_app.py"
                 if os.path.exists(curr_file):
-                    shutil.copy(curr_file, "yt_archive_app.py.bak")
+                    os.makedirs("local_builds", exist_ok=True)
+                    timestamp = time.strftime('%Y%m%d_%H%M%S')
+                    bak_filename = f"local_builds/yt_archive_app_v{APP_VERSION}_{timestamp}.bak"
+                    shutil.copy(curr_file, bak_filename)
 
                 # Write new code
                 action_status_lbl.config(text="Installing updated code...")
@@ -3927,7 +3930,7 @@ class ArchiveApp:
                     action_status_lbl.config(text="Update completed successfully!")
                     apply_btn.config(state=tk.NORMAL)
                     rollback_btn.config(state=tk.NORMAL)
-                    ans = messagebox.askyesno("Update Complete", f"Successfully updated The Archiver to {selected_key}!\n\nA backup of the previous build was saved to yt_archive_app.py.bak.\n\nWould you like to restart the application now?", parent=dialog)
+                    ans = messagebox.askyesno("Update Complete", f"Successfully updated The Archiver to {selected_key}!\n\nA backup of the previous build was safely archived in the 'local_builds' folder.\n\nWould you like to restart the application now?", parent=dialog)
                     if ans:
                         dialog.destroy()
                         self.on_close()
@@ -3955,23 +3958,34 @@ class ArchiveApp:
         apply_btn.config(command=on_apply_click)
 
         def on_rollback_click():
-            if not os.path.exists("yt_archive_app.py.bak"):
-                messagebox.showerror("No Backup", "No local backup file (yt_archive_app.py.bak) found.", parent=dialog)
+            os.makedirs("local_builds", exist_ok=True)
+            bak_file = filedialog.askopenfilename(
+                parent=dialog,
+                title="Select Local Build to Restore",
+                initialdir=os.path.abspath("local_builds"),
+                filetypes=[("Backup Files", "*.bak"), ("Python Files", "*.py"), ("All Files", "*.*")]
+            )
+            if not bak_file:
                 return
-            mtime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime("yt_archive_app.py.bak")))
-            if not messagebox.askyesno("Confirm Rollback", f"Restore previous backup created on:\n{mtime}?\n\nThis will restore the previous build and restart.", parent=dialog):
+            
+            if not messagebox.askyesno("Confirm Rollback", f"Restore selected local build?\n\n{os.path.basename(bak_file)}\n\nYour current code will be safely archived and the app will restart.", parent=dialog):
                 return
+                
             try:
                 temp_curr = "yt_archive_app_temp.py"
                 shutil.copy("yt_archive_app.py", temp_curr)
-                shutil.copy("yt_archive_app.py.bak", "yt_archive_app.py")
-                shutil.move(temp_curr, "yt_archive_app.py.bak")
-                messagebox.showinfo("Rollback Complete", "Successfully restored previous backup! Restarting...", parent=dialog)
+                shutil.copy(bak_file, "yt_archive_app.py")
+                
+                timestamp = time.strftime('%Y%m%d_%H%M%S')
+                new_bak = f"local_builds/yt_archive_app_v{APP_VERSION}_{timestamp}.bak"
+                shutil.move(temp_curr, new_bak)
+                
+                messagebox.showinfo("Rollback Complete", "Successfully restored local build! Restarting...", parent=dialog)
                 dialog.destroy()
                 self.on_close()
                 subprocess.Popen([sys.executable, "yt_archive_app.py"])
             except Exception as e:
-                messagebox.showerror("Rollback Failed", f"Failed to restore backup: {e}", parent=dialog)
+                messagebox.showerror("Rollback Failed", f"Failed to restore build: {e}", parent=dialog)
 
         rollback_btn.config(command=on_rollback_click)
 
